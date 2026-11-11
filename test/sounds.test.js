@@ -3,7 +3,7 @@ import assert from 'node:assert/strict'
 import { mkdtempSync, writeFileSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { listSounds, resolveSound, soundTypeOf, soundsDir, MAX_SOUND_BYTES } from '../lib/sounds.js'
+import { importSound, listSounds, resolveSound, soundTypeOf, soundsDir, MAX_SOUND_BYTES } from '../lib/sounds.js'
 
 function withDir(run) {
   const dir = mkdtempSync(join(tmpdir(), 'spend-sounds-'))
@@ -55,4 +55,24 @@ test('resolving a custom clip yields its path and type', () => withDir((dir) => 
   assert.equal(resolved.type, 'audio/mpeg')
   assert.equal(resolved.path, join(dir, '我的提示音.mp3'))
   assert.equal(resolveSound(dir, '../evil.mp3'), undefined)
+}))
+
+test('importing writes the file and keeps a numeric suffix instead of overwriting', () => withDir((dir) => {
+  const target = join(dir, 'clips')
+  const first = importSound(target, 'my alert.mp3', new Uint8Array([1, 2, 3]))
+  const second = importSound(target, 'my alert.mp3', new Uint8Array([4, 5, 6]))
+  assert.equal(first.name, 'my alert.mp3')
+  assert.equal(second.name, 'my alert-2.mp3')
+  assert.deepEqual(listSounds(target).map((sound) => sound.name), ['my alert-2.mp3', 'my alert.mp3'])
+}))
+
+test('importing rejects unsupported names, empty bodies and oversized files', () => withDir((dir) => {
+  assert.throws(() => importSound(dir, 'notes.txt', new Uint8Array([1])), /unsupported/)
+  assert.throws(() => importSound(dir, 'clip.mp3', new Uint8Array([])), /empty/)
+  assert.throws(() => importSound(dir, 'clip.mp3', new Uint8Array(MAX_SOUND_BYTES + 1)), /too large/)
+}))
+
+test('an uploaded path is reduced to its base name', () => withDir((dir) => {
+  const stored = importSound(dir, '/etc/evil/../clip.wav', new Uint8Array([9]))
+  assert.equal(stored.name, 'clip.wav')
 }))

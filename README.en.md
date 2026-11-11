@@ -81,18 +81,13 @@ Rules: entering **off-peak** plays the selected voice, entering **peak** always 
 
 ## Custom alarm sounds
 
-The two bundled voices may not suit everyone — drop your own clips in:
+The two bundled voices may not suit everyone — no command line needed:
 
-```sh
-# Path: $DSH_HOME/spend-trend-sounds/ (defaults to ~/.dsh/spend-trend-sounds/)
-mkdir -p ~/.dsh/spend-trend-sounds
-cp my-alert.mp3 ~/.dsh/spend-trend-sounds/
-```
+1. Open the panel → enable the alarm → click **Import audio**;
+2. Pick an **mp3 / m4a / wav / ogg** file (≤ 4 MB);
+3. It is selected automatically; hit **Preview** to confirm.
 
-- **mp3 / m4a / wav / ogg**, up to 4 MB each;
-- the file name becomes the option label (`my-alert.mp3` shows as `my-alert`);
-- the list re-scans whenever the panel opens, no restart needed; if you delete a file the selection falls back to the default voice;
-- only that directory is read, only single-segment names are accepted, and hidden files or `../` paths are refused.
+Clips are stored in `$DSH_HOME/spend-trend-sounds/` (defaults to `~/.dsh/spend-trend-sounds/`); you can also copy files there by hand. The file name becomes the option label, a duplicate gets a `-2` suffix, the list re-scans whenever the panel opens, and deleting a file falls back to the default voice.
 
 ## Billing model
 

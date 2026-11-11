@@ -9,7 +9,7 @@ import { readFileSync } from 'node:fs'
 import { homedir } from 'node:os'
 import { join } from 'node:path'
 import { phaseStatus, setHolidays } from './lib/pricing.js'
-import { listSounds, resolveSound, soundsDir } from './lib/sounds.js'
+import { importSound, listSounds, MAX_SOUND_BYTES, resolveSound, soundsDir } from './lib/sounds.js'
 import { createUsageCollector } from './lib/usage.js'
 
 export const inject = ['webServer', 'sessionPersistence']
@@ -18,6 +18,7 @@ const ROUTE = '/plugin/dsh-spend-trend/daily'
 const SOUND_ROUTE = '/plugin/dsh-spend-trend/sound'
 const SOUND_LIST_ROUTE = '/plugin/dsh-spend-trend/sounds'
 const CUSTOM_SOUND_ROUTE = '/plugin/dsh-spend-trend/sound/custom/'
+const SOUND_IMPORT_ROUTE = '/plugin/dsh-spend-trend/sounds/import'
 const SOUND_DIR = new URL('./assets/sounds/', import.meta.url)
 const MAX_OFFSET_MINUTES = 14 * 60
 
@@ -127,6 +128,49 @@ export function apply(ctx) {
     kind: 'exact',
     path: SOUND_LIST_ROUTE,
     resource: async () => json(200, { ok: true, dir: soundsDir(), sounds: listSounds(soundsDir()) }),
+  }))
+
+  ctx.effect(() => ctx.webServer.register({
+    kind: 'exact',
+    path: SOUND_IMPORT_ROUTE,
+    handler: (req, res) => {
+      // A custom header keeps cross-origin forms out: browsers must preflight it,
+      // and this server sends no CORS headers.
+      if (req.method !== 'POST' || req.headers['x-spend-trend'] !== '1') {
+        res.writeHead(403, { 'content-type': 'text/plain' })
+        res.end('forbidden')
+        return
+      }
+      let name
+      try {
+        name = decodeURIComponent(String(req.headers['x-sound-name'] ?? ''))
+      } catch {
+        name = ''
+      }
+      const chunks = []
+      let size = 0
+      let tooLarge = false
+      req.on('data', (chunk) => {
+        size += chunk.length
+        if (size > MAX_SOUND_BYTES) {
+          tooLarge = true
+          req.destroy()
+          return
+        }
+        chunks.push(chunk)
+      })
+      req.on('end', () => {
+        if (tooLarge) return
+        try {
+          const stored = importSound(soundsDir(), name, Buffer.concat(chunks))
+          res.writeHead(200, { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' })
+          res.end(JSON.stringify({ ok: true, id: `custom:${stored.name}`, name: stored.name }))
+        } catch (error) {
+          res.writeHead(400, { 'content-type': 'application/json; charset=utf-8' })
+          res.end(JSON.stringify({ ok: false, error: String(error?.message ?? error) }))
+        }
+      })
+    },
   }))
 
   ctx.effect(() => ctx.webServer.register({

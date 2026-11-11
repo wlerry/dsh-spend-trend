@@ -18,6 +18,7 @@ window.__ModuleLoader__.load({
     const SOUND_BASE = '/plugin/dsh-spend-trend/sound/'
     const CUSTOM_SOUND_BASE = '/plugin/dsh-spend-trend/sound/custom/'
     const SOUND_LIST_ROUTE = '/plugin/dsh-spend-trend/sounds'
+    const SOUND_IMPORT_ROUTE = '/plugin/dsh-spend-trend/sounds/import'
     const DAY_MS = 24 * 60 * 60 * 1000
     const DATA_REFRESH_MS = 60_000
     const BALANCE_REFRESH_MS = 180_000
@@ -74,7 +75,9 @@ window.__ModuleLoader__.load({
         soundChime: 'Chime',
         soundBell: 'Bell',
         soundNone: '静音',
-        customHint: '自定义：把 mp3 / m4a / wav / ogg 放进',
+        customHint: '支持 mp3 / m4a / wav / ogg，也可以手动放进',
+        alarmImport: '导入音频',
+        alarmImportFailed: '导入失败',
       },
       en: {
         peak: 'Peak',
@@ -123,7 +126,9 @@ window.__ModuleLoader__.load({
         soundChime: 'Chime',
         soundBell: 'Bell',
         soundNone: 'Silent',
-        customHint: 'Custom: drop mp3 / m4a / wav / ogg into',
+        customHint: 'mp3 / m4a / wav / ogg supported; you can also drop files into',
+        alarmImport: 'Import audio',
+        alarmImportFailed: 'Import failed',
       },
     }
 
@@ -200,6 +205,24 @@ window.__ModuleLoader__.load({
       } catch {
         return { dir: '', sounds: [], loaded: true }
       }
+    }
+
+    /** Upload one picked file into the user's sound directory. */
+    async function uploadSound(file) {
+      const response = await fetch(SOUND_IMPORT_ROUTE, {
+        method: 'POST',
+        headers: {
+          'x-spend-trend': '1',
+          'x-sound-name': encodeURIComponent(file.name),
+          'content-type': 'application/octet-stream',
+        },
+        body: file,
+      })
+      const payload = await response.json().catch(() => ({}))
+      if (!response.ok || payload?.ok !== true) {
+        throw new Error(payload?.error ?? `import failed (${response.status})`)
+      }
+      return payload
     }
 
     function loadAlarm() {
@@ -619,7 +642,7 @@ window.__ModuleLoader__.load({
         }, options.map((option) => h('option', { key: option.id, value: option.id }, option.label)))
       }
 
-      function AlarmSettings({ alarm, custom, onChange, denied }) {
+      function AlarmSettings({ alarm, custom, onChange, onImport, denied }) {
         const enable = async (next) => {
           if (next) {
             audio.unlock()
@@ -655,6 +678,24 @@ window.__ModuleLoader__.load({
                 style: styles.smallButton,
                 onClick: () => { audio.unlock(); audio.play(alarm.sound) },
               }, text.alarmPreview),
+              h('label', {
+                key: 'i',
+                style: { ...styles.smallButton, display: 'inline-flex', alignItems: 'center' },
+                title: text.alarmImport,
+              }, [
+                text.alarmImport,
+                h('input', {
+                  key: 'f',
+                  type: 'file',
+                  accept: '.mp3,.m4a,.wav,.ogg,audio/*',
+                  style: { display: 'none' },
+                  onChange: (event) => {
+                    const file = event.target.files?.[0]
+                    event.target.value = ''
+                    if (file !== undefined) onImport(file)
+                  },
+                }),
+              ]),
             ]),
           ]) : null,
           alarm.enabled ? h('div', { key: 'advance', style: styles.settingRow }, [
@@ -676,7 +717,7 @@ window.__ModuleLoader__.load({
         ])
       }
 
-      function Panel({ daily, balance, phase, alarm, custom, setAlarm, position, panelRef, onClose }) {
+      function Panel({ daily, balance, phase, alarm, custom, notice, setAlarm, onImport, position, panelRef, onClose }) {
         const days = daily?.days ?? []
         const weekTotal = days.reduce((sum, day) => sum + (Number(day.cost) || 0), 0)
         const previous = days.slice(0, -1)
@@ -745,7 +786,8 @@ window.__ModuleLoader__.load({
             h('span', { key: 'v', style: styles.footValue }, `${money.toppedUp} · ${text.bonus} ${money.bonus}`),
           ]),
           h('div', { key: 'hint', style: styles.hint }, text.schedule),
-          h(AlarmSettings, { key: 'alarm', alarm, custom, denied, onChange: setAlarm }),
+          h(AlarmSettings, { key: 'alarm', alarm, custom, denied, onChange: setAlarm, onImport }),
+          notice === '' ? null : h('div', { key: 'notice', style: styles.note }, notice),
         ])
       }
 
@@ -758,6 +800,7 @@ window.__ModuleLoader__.load({
         const [now, setNow] = React.useState(() => Date.now())
         const [alarm, setAlarmState] = React.useState(loadAlarm)
         const [custom, setCustom] = React.useState({ dir: '', sounds: [], loaded: false })
+        const [notice, setNotice] = React.useState('')
         const [flash, setFlash] = React.useState(false)
         const buttonRef = React.useRef(null)
         const panelRef = React.useRef(null)
@@ -767,6 +810,17 @@ window.__ModuleLoader__.load({
         const setAlarm = (next) => {
           setAlarmState(next)
           saveAlarm(next)
+        }
+
+        const importClip = async (file) => {
+          try {
+            const payload = await uploadSound(file)
+            setCustom(await readCustomSounds())
+            setAlarm({ ...alarm, enabled: true, sound: payload.id })
+            setNotice('')
+          } catch (error) {
+            setNotice(`${text.alarmImportFailed}：${String(error?.message ?? error)}`)
+          }
         }
 
         const load = React.useCallback(() => {
@@ -942,7 +996,9 @@ window.__ModuleLoader__.load({
               phase,
               alarm,
               custom,
+              notice,
               setAlarm,
+              onImport: importClip,
               position,
               panelRef,
               onClose: () => setOpen(false),

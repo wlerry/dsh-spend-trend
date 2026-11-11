@@ -2,7 +2,7 @@
 
 ## 1.3.0 — 2026-11-11
 
-- Added custom alarm sounds: any mp3 / m4a / wav / ogg clip dropped into `$DSH_HOME/spend-trend-sounds/` shows up in the sound picker, re-scanned whenever the panel opens.
+- Added custom alarm sounds: an **Import audio** button opens the system file picker and copies the clip into `$DSH_HOME/spend-trend-sounds/`; files copied there by hand appear in the picker too, re-scanned whenever the panel opens.
 - The host lists and serves those clips through two routes, rejecting hidden files, path traversal, unknown extensions and files over 4 MB.
 - Seven new tests cover the directory rules and the custom-preset behaviour (24 total).
 

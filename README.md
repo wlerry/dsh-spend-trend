@@ -81,18 +81,13 @@ dsh plugin --profile <profile> add github:wlerry/dsh-spend-trend
 
 ## 自定义提醒音
 
-内置的两段语音不一定合每个人口味，你可以放自己的音频进去：
+内置的两段语音不一定合每个人口味，不用命令行，直接导入：
 
-```sh
-# 目录：$DSH_HOME/spend-trend-sounds/（默认 ~/.dsh/spend-trend-sounds/）
-mkdir -p ~/.dsh/spend-trend-sounds
-cp 我的提示音.mp3 ~/.dsh/spend-trend-sounds/
-```
+1. 打开面板 → 开启提醒 → 点「**导入音频**」；
+2. 选一个 **mp3 / m4a / wav / ogg**（≤ 4 MB）；
+3. 导入后自动选中，点「试听」确认。
 
-- 支持 **mp3 / m4a / wav / ogg**，单个文件 ≤ 4 MB；
-- 文件名就是下拉菜单里的选项名（`我的提示音.mp3` 显示为 `我的提示音`）；
-- 打开面板时会重新扫描，不用重启；文件删掉后会自动回落到默认语音；
-- 只读取这个目录、只认单层文件名，隐藏文件和 `../` 这类路径会被拒绝。
+文件会存到 `$DSH_HOME/spend-trend-sounds/`（默认 `~/.dsh/spend-trend-sounds/`），也可以手动把文件拷进去。文件名就是下拉菜单里的选项名，重名会自动加 `-2`；打开面板时会重新扫描，删掉文件后会自动回落到默认语音。
 
 ## 计费口径
 
