@@ -17,7 +17,7 @@ export const inject = ['webServer', 'sessionPersistence']
 const ROUTE = '/plugin/dsh-spend-trend/daily'
 const SOUND_ROUTE = '/plugin/dsh-spend-trend/sound'
 const SOUND_LIST_ROUTE = '/plugin/dsh-spend-trend/sounds'
-const CUSTOM_SOUND_ROUTE = '/plugin/dsh-spend-trend/sound/custom/'
+const CUSTOM_SOUND_ROUTE = '/plugin/dsh-spend-trend/sound/custom'
 const SOUND_IMPORT_ROUTE = '/plugin/dsh-spend-trend/sounds/import'
 const SOUND_DIR = new URL('./assets/sounds/', import.meta.url)
 const MAX_OFFSET_MINUTES = 14 * 60
@@ -180,7 +180,7 @@ export function apply(ctx) {
       const url = new URL(request.url)
       let name
       try {
-        name = decodeURIComponent(url.pathname.slice(CUSTOM_SOUND_ROUTE.length))
+        name = decodeURIComponent(url.pathname.slice(CUSTOM_SOUND_ROUTE.length + 1))
       } catch {
         return new Response('not found', { status: 404 })
       }
