@@ -18,6 +18,7 @@
 - 💰 **Off-peak is half price**: output costs ¥8 per million tokens at peak and ¥4 off-peak. The badge keeps the countdown to the switch in sight.
 - 📊 **The bill at a glance**: account balance, today's spend, a 7-day bar chart and the current model's two-tier rates, one click away.
 - 🪶 **Small and local**: plain JavaScript, no runtime dependencies, no outbound network — it only reads token usage from your local session logs.
+- 🪟 **One row, no clutter**: fits a 13-inch screen; collapse the sidebar and only a dot and an amount remain, taking no working space.
 
 ## Install
 
