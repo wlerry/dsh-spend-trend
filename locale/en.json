@@ -1,0 +1,6 @@
+{
+  "meta": {
+    "title": "Spend trend badge",
+    "description": "Shows the token spend trend (peak or trough) and account balance above the sidebar account entry, with a 7-day bar chart."
+  }
+}

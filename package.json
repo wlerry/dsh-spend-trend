@@ -1,0 +1,58 @@
+{
+  "name": "dsh-spend-trend",
+  "version": "1.0.0",
+  "description": "Sidebar badge for DeepSeek Harness: current peak/off-peak billing phase, countdown, account balance and a 7-day CNY spend chart.",
+  "type": "module",
+  "license": "MIT",
+  "author": "fylz1125",
+  "keywords": [
+    "dsh",
+    "dsh-plugin",
+    "deepseek",
+    "deepseek-harness",
+    "cost",
+    "balance",
+    "peak",
+    "billing"
+  ],
+  "homepage": "https://github.com/fylz1125/dsh-spend-trend#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/fylz1125/dsh-spend-trend.git"
+  },
+  "bugs": {
+    "url": "https://github.com/fylz1125/dsh-spend-trend/issues"
+  },
+  "engines": {
+    "dsh": ">=0.2.2-rc.1",
+    "node": ">=20"
+  },
+  "exports": {
+    ".": "./index.js",
+    "./client": "./client.js",
+    "./locale/*.json": "./locale/*.json",
+    "./icon": "./icon.svg"
+  },
+  "files": [
+    "index.js",
+    "client.js",
+    "cordis.patch.yml",
+    "locale/*.json",
+    "icon.svg",
+    "assets/*.png",
+    "README.md",
+    "LICENSE"
+  ],
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "platform": "web",
+      "immediately": true,
+      "inject": [
+        "@deepseek-ai/dsh-client-ui-sidebar"
+      ]
+    }
+  }
+}
