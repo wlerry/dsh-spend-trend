@@ -3,7 +3,7 @@ import assert from 'node:assert/strict'
 import { mkdtempSync, writeFileSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { importSound, listSounds, resolveSound, soundTypeOf, soundsDir, MAX_SOUND_BYTES } from '../lib/sounds.js'
+import { importSound, listSounds, removeSound, resolveSound, soundTypeOf, soundsDir, MAX_SOUND_BYTES } from '../lib/sounds.js'
 
 function withDir(run) {
   const dir = mkdtempSync(join(tmpdir(), 'spend-sounds-'))
@@ -75,4 +75,12 @@ test('importing rejects unsupported names, empty bodies and oversized files', ()
 test('an uploaded path is reduced to its base name', () => withDir((dir) => {
   const stored = importSound(dir, '/etc/evil/../clip.wav', new Uint8Array([9]))
   assert.equal(stored.name, 'clip.wav')
+}))
+
+test('removing a clip only accepts safe names', () => withDir((dir) => {
+  importSound(dir, 'a.mp3', new Uint8Array([1, 2]))
+  assert.equal(removeSound(dir, 'a.mp3'), true)
+  assert.equal(removeSound(dir, 'a.mp3'), false)
+  assert.throws(() => removeSound(dir, '../escape.mp3'), /unsupported/)
+  assert.deepEqual(listSounds(dir), [])
 }))

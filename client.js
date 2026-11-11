@@ -77,6 +77,7 @@ window.__ModuleLoader__.load({
         soundNone: '静音',
         customHint: '支持 mp3 / m4a / wav / ogg，也可以手动放进',
         alarmImport: '导入音频',
+        alarmDelete: '删除',
         alarmImportFailed: '导入失败',
       },
       en: {
@@ -128,6 +129,7 @@ window.__ModuleLoader__.load({
         soundNone: 'Silent',
         customHint: 'mp3 / m4a / wav / ogg supported; you can also drop files into',
         alarmImport: 'Import audio',
+        alarmDelete: 'Delete',
         alarmImportFailed: 'Import failed',
       },
     }
@@ -223,6 +225,15 @@ window.__ModuleLoader__.load({
         throw new Error(payload?.error ?? `import failed (${response.status})`)
       }
       return payload
+    }
+
+    /** Delete one imported clip from the user's folder. */
+    async function removeClip(name) {
+      const response = await fetch(`${SOUND_LIST_ROUTE}/${encodeURIComponent(name)}`, {
+        method: 'DELETE',
+        headers: { 'x-spend-trend': '1' },
+      })
+      if (!response.ok) throw new Error(`delete failed (${response.status})`)
     }
 
     function loadAlarm() {
@@ -642,7 +653,7 @@ window.__ModuleLoader__.load({
         }, options.map((option) => h('option', { key: option.id, value: option.id }, option.label)))
       }
 
-      function AlarmSettings({ alarm, custom, onChange, onImport, denied }) {
+      function AlarmSettings({ alarm, custom, onChange, onImport, onDelete, denied }) {
         const enable = async (next) => {
           if (next) {
             audio.unlock()
@@ -678,6 +689,13 @@ window.__ModuleLoader__.load({
                 style: styles.smallButton,
                 onClick: () => { audio.unlock(); audio.play(alarm.sound) },
               }, text.alarmPreview),
+              alarm.sound.startsWith('custom:') ? h('button', {
+                key: 'd',
+                type: 'button',
+                style: styles.smallButton,
+                title: text.alarmDelete,
+                onClick: () => onDelete(alarm.sound.slice('custom:'.length)),
+              }, text.alarmDelete) : null,
               h('label', {
                 key: 'i',
                 style: { ...styles.smallButton, display: 'inline-flex', alignItems: 'center' },
@@ -717,7 +735,7 @@ window.__ModuleLoader__.load({
         ])
       }
 
-      function Panel({ daily, balance, phase, alarm, custom, notice, setAlarm, onImport, position, panelRef, onClose }) {
+      function Panel({ daily, balance, phase, alarm, custom, notice, setAlarm, onImport, onDelete, position, panelRef, onClose }) {
         const days = daily?.days ?? []
         const weekTotal = days.reduce((sum, day) => sum + (Number(day.cost) || 0), 0)
         const previous = days.slice(0, -1)
@@ -786,7 +804,7 @@ window.__ModuleLoader__.load({
             h('span', { key: 'v', style: styles.footValue }, `${money.toppedUp} · ${text.bonus} ${money.bonus}`),
           ]),
           h('div', { key: 'hint', style: styles.hint }, text.schedule),
-          h(AlarmSettings, { key: 'alarm', alarm, custom, denied, onChange: setAlarm, onImport }),
+          h(AlarmSettings, { key: 'alarm', alarm, custom, denied, onChange: setAlarm, onImport, onDelete }),
           notice === '' ? null : h('div', { key: 'notice', style: styles.note }, notice),
         ])
       }
@@ -810,6 +828,17 @@ window.__ModuleLoader__.load({
         const setAlarm = (next) => {
           setAlarmState(next)
           saveAlarm(next)
+        }
+
+        const deleteClip = async (name) => {
+          try {
+            await removeClip(name)
+            setCustom(await readCustomSounds())
+            if (alarm.sound === `custom:${name}`) setAlarm({ ...alarm, sound: DEFAULT_ALARM.sound })
+            setNotice('')
+          } catch (error) {
+            setNotice(`${text.alarmImportFailed}：${String(error?.message ?? error)}`)
+          }
         }
 
         const importClip = async (file) => {
@@ -999,6 +1028,7 @@ window.__ModuleLoader__.load({
               notice,
               setAlarm,
               onImport: importClip,
+              onDelete: deleteClip,
               position,
               panelRef,
               onClose: () => setOpen(false),

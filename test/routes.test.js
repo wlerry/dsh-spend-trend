@@ -35,3 +35,11 @@ test('the custom sound prefix has no trailing slash, or the host never matches i
   assert.equal(prefix.path.endsWith('/'), false)
   assert.ok('/plugin/dsh-spend-trend/sound/custom/audio.wav'.startsWith(`${prefix.path}/`))
 })
+
+test('the delete prefix is registered without a trailing slash', () => {
+  const prefix = registeredRoutes()
+    .find((route) => route.kind === 'prefix' && route.path === '/plugin/dsh-spend-trend/sounds')
+  assert.ok(prefix !== undefined, 'sounds prefix is missing')
+  assert.equal(prefix.path.endsWith('/'), false)
+  assert.ok('/plugin/dsh-spend-trend/sounds/audio.wav'.startsWith(`${prefix.path}/`))
+})

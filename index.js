@@ -9,7 +9,7 @@ import { readFileSync } from 'node:fs'
 import { homedir } from 'node:os'
 import { join } from 'node:path'
 import { phaseStatus, setHolidays } from './lib/pricing.js'
-import { importSound, listSounds, MAX_SOUND_BYTES, resolveSound, soundsDir } from './lib/sounds.js'
+import { importSound, listSounds, MAX_SOUND_BYTES, removeSound, resolveSound, soundsDir } from './lib/sounds.js'
 import { createUsageCollector } from './lib/usage.js'
 
 export const inject = ['webServer', 'sessionPersistence']
@@ -170,6 +170,32 @@ export function apply(ctx) {
           res.end(JSON.stringify({ ok: false, error: String(error?.message ?? error) }))
         }
       })
+    },
+  }))
+
+  ctx.effect(() => ctx.webServer.register({
+    kind: 'prefix',
+    path: SOUND_LIST_ROUTE,
+    handler: (req, res) => {
+      if (req.method !== 'DELETE' || req.headers['x-spend-trend'] !== '1') {
+        res.writeHead(403, { 'content-type': 'text/plain' })
+        res.end('forbidden')
+        return
+      }
+      let name
+      try {
+        name = decodeURIComponent(new URL(req.url ?? '/', 'http://local').pathname.slice(SOUND_LIST_ROUTE.length + 1))
+      } catch {
+        name = ''
+      }
+      try {
+        const removed = removeSound(soundsDir(), name)
+        res.writeHead(removed ? 200 : 404, { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' })
+        res.end(JSON.stringify(removed ? { ok: true, name } : { ok: false, error: 'not found' }))
+      } catch (error) {
+        res.writeHead(400, { 'content-type': 'application/json; charset=utf-8' })
+        res.end(JSON.stringify({ ok: false, error: String(error?.message ?? error) }))
+      }
     },
   }))
 
