@@ -95,6 +95,21 @@ Unit: CNY per million tokens ([official price list](https://api-docs.deepseek.co
 - Unknown models fall back to the deepseek-flash rates.
 - **Chinese statutory holidays** are not built in; configure them through `$DSH_HOME/spend-trend-holidays.json` (see below).
 
+### What one refactor costs
+
+Take a medium refactor of **100 rounds**, 120k input tokens per round (100k cache hits, 20k misses) and 4k output tokens, on `deepseek-flash`:
+
+| Item | Per round (peak) | Per round (off-peak) |
+|---|---|---|
+| 20k misses × rate | 20k × ¥2/M = ¥0.040 | 20k × ¥1/M = ¥0.020 |
+| 100k hits × rate | 100k × ¥0.04/M = ¥0.004 | 100k × ¥0.02/M = ¥0.002 |
+| 4k output × rate | 4k × ¥8/M = ¥0.032 | 4k × ¥4/M = ¥0.016 |
+| **Total** | **¥0.076** | **¥0.038** |
+
+The whole task: **¥7.60 at peak vs ¥3.80 off-peak**. Run it 20 times a month and that is **¥152 vs ¥76** — the saving alone pays for twenty more refactors.
+
+> Estimates follow the official price list and the token mix above. The real bill depends on the cache-hit rate: the higher it is, the more the peak/off-peak gap sits in the cache-hit rate (¥0.04 vs ¥0.02).
+
 ## Platform support
 
 Works on macOS, Windows and Linux: the plugin is plain JavaScript, the host half only uses cross-platform Node APIs (`fs`, `os`, `path`), and the browser half is an ordinary web component — no shell commands, native dependencies or platform checks. CI runs the suite on Ubuntu, Windows and macOS across Node 20/22/24.
