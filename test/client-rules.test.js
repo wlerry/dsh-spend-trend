@@ -62,6 +62,14 @@ test('entering peak always uses the ping tone', () => {
   assert.equal(rules.chooseSound('chime', 'peak', noon), 'ping')
 })
 
+test('custom clips follow the same rules as the bundled voices', () => {
+  const noon = beijing(2026, 11, 11, 12, 30)
+  const night = beijing(2026, 11, 11, 23, 0)
+  assert.equal(rules.chooseSound('custom:我的提示音.mp3', 'off', noon), 'custom:我的提示音.mp3')
+  assert.equal(rules.chooseSound('custom:我的提示音.mp3', 'off', night), 'ping')
+  assert.equal(rules.chooseSound('custom:我的提示音.mp3', 'peak', noon), 'ping')
+})
+
 test('the silent preset plays nothing', () => {
   const noon = beijing(2026, 11, 11, 12, 30)
   assert.equal(rules.chooseSound('none', 'off', noon), null)

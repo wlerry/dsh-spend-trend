@@ -9,12 +9,15 @@ import { readFileSync } from 'node:fs'
 import { homedir } from 'node:os'
 import { join } from 'node:path'
 import { phaseStatus, setHolidays } from './lib/pricing.js'
+import { listSounds, resolveSound, soundsDir } from './lib/sounds.js'
 import { createUsageCollector } from './lib/usage.js'
 
 export const inject = ['webServer', 'sessionPersistence']
 
 const ROUTE = '/plugin/dsh-spend-trend/daily'
 const SOUND_ROUTE = '/plugin/dsh-spend-trend/sound'
+const SOUND_LIST_ROUTE = '/plugin/dsh-spend-trend/sounds'
+const CUSTOM_SOUND_ROUTE = '/plugin/dsh-spend-trend/sound/custom/'
 const SOUND_DIR = new URL('./assets/sounds/', import.meta.url)
 const MAX_OFFSET_MINUTES = 14 * 60
 
@@ -117,6 +120,40 @@ export function apply(ctx) {
     kind: 'exact',
     path: ROUTE,
     resource: respond,
+  }))
+
+  // The user's own clips: list them, and serve any one by file name.
+  ctx.effect(() => ctx.webServer.register({
+    kind: 'exact',
+    path: SOUND_LIST_ROUTE,
+    resource: async () => json(200, { ok: true, dir: soundsDir(), sounds: listSounds(soundsDir()) }),
+  }))
+
+  ctx.effect(() => ctx.webServer.register({
+    kind: 'prefix',
+    path: CUSTOM_SOUND_ROUTE,
+    resource: async (request) => {
+      const url = new URL(request.url)
+      let name
+      try {
+        name = decodeURIComponent(url.pathname.slice(CUSTOM_SOUND_ROUTE.length))
+      } catch {
+        return new Response('not found', { status: 404 })
+      }
+      const resolved = resolveSound(soundsDir(), name)
+      if (resolved === undefined) return new Response('not found', { status: 404 })
+      try {
+        const data = readFileSync(resolved.path)
+        return new Response(data, {
+          headers: {
+            'content-type': resolved.type,
+            'cache-control': 'public, max-age=3600',
+          },
+        })
+      } catch {
+        return new Response('not found', { status: 404 })
+      }
+    },
   }))
 
   for (const file of SOUND_FILES) {

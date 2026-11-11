@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.3.0 — 2026-11-11
+
+- Added custom alarm sounds: any mp3 / m4a / wav / ogg clip dropped into `$DSH_HOME/spend-trend-sounds/` shows up in the sound picker, re-scanned whenever the panel opens.
+- The host lists and serves those clips through two routes, rejecting hidden files, path traversal, unknown extensions and files over 4 MB.
+- Seven new tests cover the directory rules and the custom-preset behaviour (24 total).
+
 ## 1.2.0 — 2026-11-11
 
 - Added the phase alarm: a configurable sound when the billing phase flips, an optional two-minute heads-up, and a notification when permission is granted.

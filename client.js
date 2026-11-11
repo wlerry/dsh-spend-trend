@@ -16,6 +16,8 @@ window.__ModuleLoader__.load({
 
     const ROUTE = '/plugin/dsh-spend-trend/daily'
     const SOUND_BASE = '/plugin/dsh-spend-trend/sound/'
+    const CUSTOM_SOUND_BASE = '/plugin/dsh-spend-trend/sound/custom/'
+    const SOUND_LIST_ROUTE = '/plugin/dsh-spend-trend/sounds'
     const DAY_MS = 24 * 60 * 60 * 1000
     const DATA_REFRESH_MS = 60_000
     const BALANCE_REFRESH_MS = 180_000
@@ -72,6 +74,7 @@ window.__ModuleLoader__.load({
         soundChime: 'Chime',
         soundBell: 'Bell',
         soundNone: '静音',
+        customHint: '自定义：把 mp3 / m4a / wav / ogg 放进',
       },
       en: {
         peak: 'Peak',
@@ -120,6 +123,7 @@ window.__ModuleLoader__.load({
         soundChime: 'Chime',
         soundBell: 'Bell',
         soundNone: 'Silent',
+        customHint: 'Custom: drop mp3 / m4a / wav / ogg into',
       },
     }
 
@@ -160,11 +164,13 @@ window.__ModuleLoader__.load({
     function chooseSound(preset, nextPhase, time) {
       if (preset === 'none') return null
       const entry = SOUNDS.find((sound) => sound.id === preset)
+      const custom = preset.startsWith('custom:')
       // Peak entry always uses a short tone: the voice line is about off-peak.
       if (nextPhase !== 'off') return 'ping'
-      if (entry === undefined) return 'ping'
-      if (entry.kind === 'voice' && isQuietHours(time)) return 'ping'
-      return entry.id
+      if (entry === undefined && !custom) return 'ping'
+      const isVoice = custom || entry?.kind === 'voice'
+      if (isVoice && isQuietHours(time)) return 'ping'
+      return preset
     }
 
     function pickLocale(ctx) {
@@ -176,6 +182,24 @@ window.__ModuleLoader__.load({
       }
       const fallback = String(globalThis.navigator?.language ?? 'zh')
       return fallback.toLowerCase().startsWith('zh') ? 'zh' : 'en'
+    }
+
+    async function readCustomSounds() {
+      try {
+        const response = await fetch(SOUND_LIST_ROUTE, {
+          credentials: 'same-origin',
+          headers: { accept: 'application/json' },
+        })
+        if (!response.ok) return { dir: '', sounds: [], loaded: true }
+        const payload = await response.json()
+        return {
+          dir: typeof payload?.dir === 'string' ? payload.dir : '',
+          sounds: Array.isArray(payload?.sounds) ? payload.sounds : [],
+          loaded: true,
+        }
+      } catch {
+        return { dir: '', sounds: [], loaded: true }
+      }
     }
 
     function loadAlarm() {
@@ -497,16 +521,16 @@ window.__ModuleLoader__.load({
         }
       }
 
-      async function voice(file) {
+      async function voice(url, key) {
         const audio = audioContext()
         if (audio === null) return
-        let buffer = buffers.get(file)
+        let buffer = buffers.get(key)
         if (buffer === undefined) {
-          const response = await fetch(`${SOUND_BASE}${file}`)
+          const response = await fetch(url)
           if (!response.ok) return
           const bytes = await response.arrayBuffer()
           buffer = await audio.decodeAudioData(bytes)
-          buffers.set(file, buffer)
+          buffers.set(key, buffer)
         }
         const source = audio.createBufferSource()
         source.buffer = buffer
@@ -516,10 +540,15 @@ window.__ModuleLoader__.load({
 
       function play(soundId) {
         if (soundId === null || soundId === undefined) return
+        if (soundId.startsWith('custom:')) {
+          const name = soundId.slice('custom:'.length)
+          voice(`${CUSTOM_SOUND_BASE}${encodeURIComponent(name)}`, soundId).catch(() => {})
+          return
+        }
         const entry = SOUNDS.find((sound) => sound.id === soundId)
         if (entry === undefined || entry.kind === 'none') return
         if (entry.kind === 'voice') {
-          voice(entry.file).catch(() => {})
+          voice(`${SOUND_BASE}${entry.file}`, entry.id).catch(() => {})
           return
         }
         tone(entry.id)
@@ -576,17 +605,21 @@ window.__ModuleLoader__.load({
         return `${text.cacheHit} ¥${prices.hit} · ${text.cacheMiss} ¥${prices.miss} · ${text.output} ¥${prices.output}`
       }
 
-      function SoundPicker({ alarm, onChange }) {
+      function SoundPicker({ alarm, custom, onChange }) {
+        const options = [
+          ...SOUNDS.map((sound) => ({ id: sound.id, label: text[sound.labelKey] })),
+          ...custom.sounds.map((sound) => ({ id: sound.id, label: sound.name })),
+        ]
         return h('select', {
           className: 'dsh-spend-trend-select',
           style: styles.control,
           value: alarm.sound,
           'aria-label': text.alarmSound,
           onChange: (event) => onChange({ ...alarm, sound: event.target.value }),
-        }, SOUNDS.map((sound) => h('option', { key: sound.id, value: sound.id }, text[sound.labelKey])))
+        }, options.map((option) => h('option', { key: option.id, value: option.id }, option.label)))
       }
 
-      function AlarmSettings({ alarm, onChange, denied }) {
+      function AlarmSettings({ alarm, custom, onChange, denied }) {
         const enable = async (next) => {
           if (next) {
             audio.unlock()
@@ -615,7 +648,7 @@ window.__ModuleLoader__.load({
           alarm.enabled ? h('div', { key: 'sound', style: styles.settingRow }, [
             h('span', { key: 'l', style: styles.settingLabel }, text.alarmSound),
             h('span', { key: 'c', style: { display: 'flex', alignItems: 'center', gap: 6 } }, [
-              h(SoundPicker, { key: 's', alarm, onChange }),
+              h(SoundPicker, { key: 's', alarm, custom, onChange }),
               h('button', {
                 key: 'p',
                 type: 'button',
@@ -638,10 +671,12 @@ window.__ModuleLoader__.load({
             text.alarmQuiet,
             denied ? ` · ${text.alarmDenied}` : '',
           ].join('')) : null,
+          h('div', { key: 'custom', style: { ...styles.note, wordBreak: 'break-all' } },
+            `${text.customHint} ${custom.dir === '' ? '~/.dsh/spend-trend-sounds' : custom.dir}`),
         ])
       }
 
-      function Panel({ daily, balance, phase, alarm, setAlarm, position, panelRef, onClose }) {
+      function Panel({ daily, balance, phase, alarm, custom, setAlarm, position, panelRef, onClose }) {
         const days = daily?.days ?? []
         const weekTotal = days.reduce((sum, day) => sum + (Number(day.cost) || 0), 0)
         const previous = days.slice(0, -1)
@@ -710,7 +745,7 @@ window.__ModuleLoader__.load({
             h('span', { key: 'v', style: styles.footValue }, `${money.toppedUp} · ${text.bonus} ${money.bonus}`),
           ]),
           h('div', { key: 'hint', style: styles.hint }, text.schedule),
-          h(AlarmSettings, { key: 'alarm', alarm, denied, onChange: setAlarm }),
+          h(AlarmSettings, { key: 'alarm', alarm, custom, denied, onChange: setAlarm }),
         ])
       }
 
@@ -722,6 +757,7 @@ window.__ModuleLoader__.load({
         const [position, setPosition] = React.useState(null)
         const [now, setNow] = React.useState(() => Date.now())
         const [alarm, setAlarmState] = React.useState(loadAlarm)
+        const [custom, setCustom] = React.useState({ dir: '', sounds: [], loaded: false })
         const [flash, setFlash] = React.useState(false)
         const buttonRef = React.useRef(null)
         const panelRef = React.useRef(null)
@@ -762,6 +798,20 @@ window.__ModuleLoader__.load({
           const tick = setInterval(() => setNow(Date.now()), 1000)
           return () => clearInterval(tick)
         }, [])
+
+        React.useEffect(() => {
+          let cancelled = false
+          readCustomSounds().then((value) => { if (!cancelled) setCustom(value) })
+          return () => { cancelled = true }
+        }, [])
+
+        // A custom clip the user deleted falls back to the default voice.
+        React.useEffect(() => {
+          if (!custom.loaded) return
+          if (!alarm.sound.startsWith('custom:')) return
+          if (custom.sounds.some((sound) => sound.id === alarm.sound)) return
+          setAlarm({ ...alarm, sound: DEFAULT_ALARM.sound })
+        }, [custom, alarm])
 
         React.useEffect(() => {
           let cancelled = false
@@ -858,6 +908,7 @@ window.__ModuleLoader__.load({
             setPosition({ left, bottom: Math.max(8, window.innerHeight - rect.top + 8) })
           }
           audio.unlock()
+          readCustomSounds().then(setCustom).catch(() => {})
           setOpen(true)
           setNow(Date.now())
         }
@@ -890,6 +941,7 @@ window.__ModuleLoader__.load({
               balance,
               phase,
               alarm,
+              custom,
               setAlarm,
               position,
               panelRef,

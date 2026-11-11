@@ -74,10 +74,25 @@ The popover can notify you when the billing phase flips (off by default):
 | Setting | Meaning |
 |---|---|
 | Enable | Master switch; asks for notification permission on first use and falls back to sound only when denied |
-| Sound | Mature voice / Cute voice / Ping / Chime / Bell / Silent, with a preview button |
+| Sound | Mature voice / Cute voice / Ping / Chime / Bell / Silent, with a preview button; clips dropped into `~/.dsh/spend-trend-sounds/` appear here too |
 | 2-minute heads-up | Off by default; plays a light chime two minutes before the switch |
 
 Rules: entering **off-peak** plays the selected voice, entering **peak** always uses Ping, and between **22:00 and 06:00 Beijing time** the voice is replaced by Ping. Settings live in browser `localStorage` (per device). The page must stay open for the alarm to fire; a sleeping machine stays silent and catches up once on wake.
+
+## Custom alarm sounds
+
+The two bundled voices may not suit everyone — drop your own clips in:
+
+```sh
+# Path: $DSH_HOME/spend-trend-sounds/ (defaults to ~/.dsh/spend-trend-sounds/)
+mkdir -p ~/.dsh/spend-trend-sounds
+cp my-alert.mp3 ~/.dsh/spend-trend-sounds/
+```
+
+- **mp3 / m4a / wav / ogg**, up to 4 MB each;
+- the file name becomes the option label (`my-alert.mp3` shows as `my-alert`);
+- the list re-scans whenever the panel opens, no restart needed; if you delete a file the selection falls back to the default voice;
+- only that directory is read, only single-segment names are accepted, and hidden files or `../` paths are refused.
 
 ## Billing model
 
