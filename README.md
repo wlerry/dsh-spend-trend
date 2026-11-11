@@ -5,6 +5,8 @@ DeepSeek Harness 侧边栏插件：**峰谷计费时段 + 账户余额 + 近 7 �
 [![npm](https://img.shields.io/npm/v/dsh-spend-trend)](https://www.npmjs.com/package/dsh-spend-trend)
 [![license](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
+> **English** — A DeepSeek Harness sidebar badge: the current peak/off-peak billing phase with a countdown to the next switch, the account balance, and a 7-day CNY spend chart priced per call at the tariff in effect at that moment. Install with `dsh plugin --profile <profile> add dsh-spend-trend`, or from GitHub with `dsh plugin --profile <profile> add github:fylz1125/dsh-spend-trend`.
+
 侧边栏底部、账户入口正上方的一个徽标：
 
 - **当前计费时段**：`● 峰期` / `● 谷期`（官方峰谷定价），后面是距下一次切换的倒计时，最右是**账户余额**；
@@ -24,7 +26,18 @@ DeepSeek 自 2026-08-17 起实行峰谷分时定价，本插件按**每次调用
 - 高峰：**北京时间周一至周五 09:00–12:00、14:00–18:00**；其余时段、周末全天为谷时。
 - 成本 = 未命中 × 未命中价 + （缓存读 + 缓存写）× 命中价 + 输出 × 输出价，价格取自该条 usage 发生时刻的档位。
 - 未知模型按 deepseek-flash 计费。
-- **中国法定节假日**目前未内置（官方按节假日不计峰），如需精确，可在 `index.js` 的 `HOLIDAYS` 集合里加日期。
+- **中国法定节假日**默认不内置，通过 `$DSH_HOME/spend-trend-holidays.json` 配置（见上）。
+
+## 法定节假日
+
+官方口径里，中国法定节假日全天按谷时计价。默认没有内置节假日表（节假日前后的调休、调价都可能变），可以放一个文件让判定跟上：
+
+```sh
+# 路径：$DSH_HOME/spend-trend-holidays.json（默认 ~/.dsh/spend-trend-holidays.json）
+["2026-10-01", "2026-10-02", "2026-10-03"]
+```
+
+文件不存在或格式不对时按“无节假日”处理，不影响启动。
 
 ## 数据来源
 
@@ -45,7 +58,9 @@ DeepSeek 自 2026-08-17 起实行峰谷分时定价，本插件按**每次调用
 
 | 文件 | 作用 |
 |---|---|
-| `index.js` | 主机侧：峰谷判定 + 按时刻计价 + 会话日志聚合 + HTTP 路由 |
+| `index.js` | 插件入口：路由装配、节假日文件加载 |
+| `lib/pricing.js` | 峰谷判定与按时刻计价 |
+| `lib/usage.js` | 会话日志聚合 |
 | `client.js` | 浏览器侧：`sidebar.footer.action` 槽位里的徽标与弹出面板 |
 | `cordis.patch.yml` | 插入 `spend-trend` 插件行 |
 | `locale/*.json` | 插件管理器中的标题与描述 |
@@ -73,6 +88,24 @@ dsh plugin --profile <profile> remove dsh-spend-trend
 ```
 
 开发时可直接链接本地目录改动：`dsh plugin --profile <profile> add link:/path/to/dsh-spend-trend`。改动浏览器端代码后需要重新安装（或重启）才会加载新 bundle。
+
+## 开发
+
+```sh
+node --test test/     # 11 个用例：峰谷边界、周末/节假日、两档计价、日窗口聚合、revision 缓存
+```
+
+代码分层：
+
+| 文件 | 职责 |
+|---|---|
+| `lib/pricing.js` | 价目表、北京时间峰谷判定、按调用时刻计价（纯函数，无 I/O） |
+| `lib/usage.js` | 会话日志折叠成 15 分钟桶、7 天窗口聚合 |
+| `index.js` | 插件入口与路由装配 |
+| `client.js` | 浏览器 bundle（手写，无需构建） |
+| `test/` | 纯函数与聚合的单测 |
+
+CI 在 Node 20 / 22 / 24 上跑语法检查、测试和 manifest 检查。
 
 ## 已知限制
 

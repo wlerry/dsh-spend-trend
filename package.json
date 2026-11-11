@@ -1,6 +1,6 @@
 {
   "name": "dsh-spend-trend",
-  "version": "1.0.1",
+  "version": "1.1.0",
   "description": "Sidebar badge for DeepSeek Harness: current peak/off-peak billing phase, countdown, account balance and a 7-day CNY spend chart.",
   "type": "module",
   "license": "MIT",
@@ -36,6 +36,7 @@
   "files": [
     "index.js",
     "client.js",
+    "lib/*.js",
     "cordis.patch.yml",
     "locale/*.json",
     "icon.svg",
@@ -54,5 +55,8 @@
         "@deepseek-ai/dsh-client-ui-sidebar"
       ]
     }
+  },
+  "scripts": {
+    "test": "node --test test/"
   }
 }
