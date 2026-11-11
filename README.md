@@ -20,6 +20,10 @@ DeepSeek Harness 侧边栏插件：**峰谷计费时段 + 账户余额 + 近 7 �
 
 ![展开面板](https://raw.githubusercontent.com/fylz1125/dsh-spend-trend/main/assets/screenshots/02-panel.png)
 
+## 平台支持
+
+macOS、Windows、Linux 都能用：插件是纯 JavaScript，主机侧只用到 Node 的跨平台 API（`fs` / `os` / `path`），浏览器侧是普通 Web 组件，不含任何 shell 命令、原生依赖或平台判断。CI 在 Ubuntu、Windows、macOS 三个平台 × Node 20/22/24 上跑测试。
+
 ## 计费口径
 
 DeepSeek 自 2026-08-17 起实行峰谷分时定价，本插件按**每次调用实际发生时刻**的档位计价（不是按天、也不是按当前时刻）：

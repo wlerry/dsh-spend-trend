@@ -20,6 +20,10 @@ One badge at the bottom of the sidebar, directly above the account entry:
 
 ![Expanded panel](https://raw.githubusercontent.com/fylz1125/dsh-spend-trend/main/assets/screenshots/02-panel.png)
 
+## Platform support
+
+Works on macOS, Windows and Linux: the plugin is plain JavaScript, the host half only uses cross-platform Node APIs (`fs`, `os`, `path`), and the browser half is an ordinary web component — no shell commands, native dependencies or platform checks. CI runs the suite on Ubuntu, Windows and macOS across Node 20/22/24.
+
 ## Billing model
 
 DeepSeek has charged peak/off-peak time-of-day rates since 2026-08-17. Every call is priced at the tier in effect **when that call actually happened** — not per day, and not at the current instant:
