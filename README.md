@@ -6,7 +6,7 @@
 
 DeepSeek Harness 侧边栏插件：**峰谷计费时段 + 账户余额 + 近 7 天人民币花费**。
 
-[![npm](https://img.shields.io/npm/v/dsh-spend-trend)](https://www.npmjs.com/package/dsh-spend-trend)
+[![npm](https://img.shields.io/npm/v/@lerry/dsh-spend-trend)](https://www.npmjs.com/package/@lerry/dsh-spend-trend)
 [![license](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
 侧边栏底部、账户入口正上方的一个徽标：
@@ -83,7 +83,7 @@ DeepSeek 自 2026-08-17 起实行峰谷分时定价，本插件按**每次调用
 从 npm 安装（重启 dsh web 或在桌面端刷新后生效）：
 
 ```sh
-dsh plugin --profile <profile> add dsh-spend-trend
+dsh plugin --profile <profile> add @lerry/dsh-spend-trend
 ```
 
 直接从 GitHub 安装：
@@ -95,7 +95,7 @@ dsh plugin --profile <profile> add github:fylz1125/dsh-spend-trend
 在 DSH 桌面端也可以走 **设置 → 插件** 里的安装入口。卸载：
 
 ```sh
-dsh plugin --profile <profile> remove dsh-spend-trend
+dsh plugin --profile <profile> remove @lerry/dsh-spend-trend
 ```
 
 开发时可直接链接本地目录改动：`dsh plugin --profile <profile> add link:/path/to/dsh-spend-trend`。改动浏览器端代码后需要重新安装（或重启）才会加载新 bundle。

@@ -6,7 +6,7 @@
 
 A DeepSeek Harness sidebar plugin: **peak/off-peak billing phase, account balance and 7-day CNY spend**.
 
-[![npm](https://img.shields.io/npm/v/dsh-spend-trend)](https://www.npmjs.com/package/dsh-spend-trend)
+[![npm](https://img.shields.io/npm/v/@lerry/dsh-spend-trend)](https://www.npmjs.com/package/@lerry/dsh-spend-trend)
 [![license](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
 One badge at the bottom of the sidebar, directly above the account entry:
@@ -83,7 +83,7 @@ A backgrounded page makes no extra requests and refreshes once when it becomes v
 From npm (restart `dsh web`, or refresh the desktop app):
 
 ```sh
-dsh plugin --profile <profile> add dsh-spend-trend
+dsh plugin --profile <profile> add @lerry/dsh-spend-trend
 ```
 
 Straight from GitHub:
@@ -95,7 +95,7 @@ dsh plugin --profile <profile> add github:fylz1125/dsh-spend-trend
 On DSH Desktop you can also use the install entry under **Settings → Plugins**. To remove it:
 
 ```sh
-dsh plugin --profile <profile> remove dsh-spend-trend
+dsh plugin --profile <profile> remove @lerry/dsh-spend-trend
 ```
 
 While developing you can link a local directory: `dsh plugin --profile <profile> add link:/path/to/dsh-spend-trend`. Browser-half changes only load after reinstalling (or restarting).

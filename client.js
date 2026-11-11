@@ -4,7 +4,7 @@
  * and the account balance, plus a 7-day CNY spend chart in a popover.
  */
 window.__ModuleLoader__.load({
-  id: 'dsh-spend-trend',
+  id: '@lerry/dsh-spend-trend',
   factory(require) {
     const React = require('react')
     const h = React.createElement
