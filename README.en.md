@@ -4,7 +4,7 @@
 
 <h1 align="center">Spend peak/off-peak chart · dsh-spend-trend</h1>
 
-<p align="center"><b>Off-peak starts, a voice tells you to get to work; before peak, one glance tells you whether the balance lasts.</b></p>
+<p align="center"><b>Think during peak, do the heavy lifting off-peak — so every cent buys real work.</b></p>
 
 <p align="center">
   <a href="README.md">中文</a> ·
@@ -14,8 +14,8 @@
 
 ## Why install it
 
-- 🔔 **It calls you when the phase flips**: entering off-peak plays “马上梁文谷啦，准备干活啦” (mature or cute voice, your pick); entering peak gives a short ping. An optional two-minute heads-up is available. Between 22:00 and 06:00 Beijing time the voice steps aside for the ping.
-- 💰 **Off-peak is half price**: output costs ¥8 per million tokens at peak and ¥4 off-peak. The badge keeps the countdown to the switch in sight.
+- 💰 **Shifting work off-peak is the point**: the same generation costs half as much off-peak — output ¥8 → ¥4 per million tokens, cache hit ¥0.04 → ¥0.02. The badge turns “is it expensive right now, and how long until it isn't” into one line you can always see.
+- ⏰ **The alarm exists to catch the cheap window**: when off-peak starts, a voice tells you to get going — that is the slot for long runs, batch generation and refactors, while peak is for lighter work (requirements, prompts, copy edits, review). Whether the voice is pleasant does not matter; **not doing heavy work at peak prices does**.
 - 📊 **The bill at a glance**: account balance, today's spend, a 7-day bar chart and the current model's two-tier rates, one click away.
 - 🪶 **Small and local**: plain JavaScript, no runtime dependencies, no outbound network — it only reads token usage from your local session logs.
 - 🪟 **One row, no clutter**: fits a 13-inch screen; collapse the sidebar and only a dot and an amount remain, taking no working space.
@@ -49,6 +49,16 @@ Remove it with `dsh plugin --profile <profile> remove @apecube/dsh-spend-trend`.
 ![Sidebar badge](https://raw.githubusercontent.com/wlerry/dsh-spend-trend/main/assets/screenshots/01-badge.png)
 
 ![Expanded panel](https://raw.githubusercontent.com/wlerry/dsh-spend-trend/main/assets/screenshots/02-panel.png)
+
+## How to use it: the off-peak rhythm
+
+| Window | Do this | Why |
+|---|---|---|
+| **Peak** (weekdays 09:00–12:00, 14:00–18:00) | Requirements, prompts, reading plans, copy edits, code review | Many turns, few tokens — the premium barely matters |
+| **Off-peak** (all other hours + weekends) | Long runs, batch generation, refactors, long documents, multi-turn agents | Half the unit price, twice the work for the same budget |
+| **Before bed** | Queue heavy jobs after midnight | The whole night is off-peak |
+
+In one line: **think when it is expensive, work when it is cheap.**
 
 ## What it shows
 
