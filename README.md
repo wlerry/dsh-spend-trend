@@ -66,8 +66,9 @@ DeepSeek 自 2026-08-17 起实行峰谷分时定价，本插件按**每次调用
 | `client.js` | 浏览器侧：`sidebar.footer.action` 槽位里的徽标与弹出面板 |
 | `cordis.patch.yml` | 插入 `spend-trend` 插件行 |
 | `locale/*.json` | 插件管理器中的标题与描述 |
-| `icon.svg` | 插件图标 |
+| `icon.png` | 插件图标（384×384，取自 `assets/icon-source.png`） |
 | `assets/icon-180.png` | 插件市场卡片用的 180×180 位图 |
+| `assets/icon-source.png` | 图标设计原稿（1254×1254，不进 npm 包） |
 
 ## 安装 / 卸载
 
