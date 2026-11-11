@@ -2,12 +2,12 @@
 
 <img src="assets/icon-180.png" width="72" height="72" alt="dsh-spend-trend icon" align="right">
 
+[中文](README.md) | [English](README.en.md)
+
 DeepSeek Harness 侧边栏插件：**峰谷计费时段 + 账户余额 + 近 7 天人民币花费**。
 
 [![npm](https://img.shields.io/npm/v/dsh-spend-trend)](https://www.npmjs.com/package/dsh-spend-trend)
 [![license](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
-
-> **English** — A DeepSeek Harness sidebar badge: the current peak/off-peak billing phase with a countdown to the next switch, the account balance, and a 7-day CNY spend chart priced per call at the tariff in effect at that moment. Install with `dsh plugin --profile <profile> add dsh-spend-trend`, or from GitHub with `dsh plugin --profile <profile> add github:fylz1125/dsh-spend-trend`.
 
 侧边栏底部、账户入口正上方的一个徽标：
 
@@ -28,7 +28,7 @@ DeepSeek 自 2026-08-17 起实行峰谷分时定价，本插件按**每次调用
 - 高峰：**北京时间周一至周五 09:00–12:00、14:00–18:00**；其余时段、周末全天为谷时。
 - 成本 = 未命中 × 未命中价 + （缓存读 + 缓存写）× 命中价 + 输出 × 输出价，价格取自该条 usage 发生时刻的档位。
 - 未知模型按 deepseek-flash 计费。
-- **中国法定节假日**默认不内置，通过 `$DSH_HOME/spend-trend-holidays.json` 配置（见上）。
+- **中国法定节假日**默认不内置，通过 `$DSH_HOME/spend-trend-holidays.json` 配置（见下）。
 
 ## 法定节假日
 
@@ -61,7 +61,7 @@ DeepSeek 自 2026-08-17 起实行峰谷分时定价，本插件按**每次调用
 | 文件 | 作用 |
 |---|---|
 | `index.js` | 插件入口：路由装配、节假日文件加载 |
-| `lib/pricing.js` | 峰谷判定与按时刻计价 |
+| `lib/pricing.js` | 价目表、峰谷判定与按时刻计价 |
 | `lib/usage.js` | 会话日志聚合 |
 | `client.js` | 浏览器侧：`sidebar.footer.action` 槽位里的徽标与弹出面板 |
 | `cordis.patch.yml` | 插入 `spend-trend` 插件行 |
@@ -112,6 +112,6 @@ CI 在 Node 20 / 22 / 24 上跑语法检查、测试和 manifest 检查。
 
 ## 已知限制
 
-- 价格表内置，官方调价后需同步 `index.js` 的 `PRICING`（展示与计费同一份常量）。
+- 价格表内置在 `lib/pricing.js`，官方调价后需同步更新（展示与计费共用同一份常量）。
 - 只统计已持久化的会话日志，进程内最后一批事件可能有几十毫秒延迟。
 - 路由只监听本机回环地址、不带鉴权，只暴露汇总数字，不含会话内容。
