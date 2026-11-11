@@ -1,0 +1,69 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="384" height="384" viewBox="0 0 384 384" role="img" aria-label="DeepSeek spend trend">
+  <defs>
+    <linearGradient id="base" x1="0" y1="0" x2="0.35" y2="1">
+      <stop offset="0" stop-color="#2446D8"/>
+      <stop offset="1" stop-color="#1136AA"/>
+    </linearGradient>
+    <radialGradient id="violetA" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#5C38D2" stop-opacity="0.72"/>
+      <stop offset="0.55" stop-color="#5C38D2" stop-opacity="0.28"/>
+      <stop offset="1" stop-color="#5C38D2" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="violetB" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#4C34E0" stop-opacity="0.72"/>
+      <stop offset="0.55" stop-color="#4C34E0" stop-opacity="0.28"/>
+      <stop offset="1" stop-color="#4C34E0" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="glintA" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#8052FF" stop-opacity="0.95"/>
+      <stop offset="0.45" stop-color="#8052FF" stop-opacity="0.35"/>
+      <stop offset="1" stop-color="#8052FF" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="glintB" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#7448FF" stop-opacity="0.95"/>
+      <stop offset="0.45" stop-color="#7448FF" stop-opacity="0.35"/>
+      <stop offset="1" stop-color="#7448FF" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="wave" gradientUnits="userSpaceOnUse" x1="23" y1="0" x2="365" y2="0">
+      <stop offset="0" stop-color="#FFA0B4"/>
+      <stop offset="0.30" stop-color="#F6F8FF"/>
+      <stop offset="0.58" stop-color="#9DF0C0"/>
+      <stop offset="0.78" stop-color="#DFF9EA"/>
+      <stop offset="1" stop-color="#F6F8FF"/>
+    </linearGradient>
+    <radialGradient id="peakFill" cx="0.38" cy="0.32" r="0.75">
+      <stop offset="0" stop-color="#FF8F8F"/>
+      <stop offset="1" stop-color="#FF5F5F"/>
+    </radialGradient>
+    <radialGradient id="valleyFill" cx="0.38" cy="0.32" r="0.75">
+      <stop offset="0" stop-color="#6BF0A8"/>
+      <stop offset="1" stop-color="#22D47C"/>
+    </radialGradient>
+    <filter id="waveGlow" x="-40%" y="-40%" width="180%" height="180%">
+      <feGaussianBlur stdDeviation="14"/>
+    </filter>
+    <filter id="dotGlow" x="-120%" y="-120%" width="340%" height="340%">
+      <feGaussianBlur stdDeviation="22"/>
+    </filter>
+    <clipPath id="tile">
+      <rect width="384" height="384" rx="84.5"/>
+    </clipPath>
+    <path id="curve" d="M23 230.4 C38.4 209.3 78.7 93.4 115.2 103.7 C151.7 113.9 200.3 277.8 241.9 291.8 C283.5 305.9 344.3 205.4 364.8 188.2"/>
+  </defs>
+
+  <g clip-path="url(#tile)">
+    <rect width="384" height="384" fill="url(#base)"/>
+    <circle cx="8" cy="8" r="223" fill="url(#violetA)"/>
+    <circle cx="376" cy="376" r="238" fill="url(#violetB)"/>
+    <circle cx="13" cy="13" r="115" fill="url(#glintA)"/>
+    <circle cx="371" cy="371" r="123" fill="url(#glintB)"/>
+
+    <use href="#curve" fill="none" stroke="#78A0FF" stroke-width="31" stroke-linecap="round" opacity="0.55" filter="url(#waveGlow)"/>
+    <use href="#curve" fill="none" stroke="url(#wave)" stroke-width="20.7" stroke-linecap="round"/>
+
+    <circle cx="115.2" cy="103.7" r="46" fill="#FF6B6B" opacity="0.55" filter="url(#dotGlow)"/>
+    <circle cx="115.2" cy="103.7" r="23.8" fill="url(#peakFill)"/>
+    <circle cx="241.9" cy="291.8" r="46" fill="#35E08A" opacity="0.55" filter="url(#dotGlow)"/>
+    <circle cx="241.9" cy="291.8" r="23.8" fill="url(#valleyFill)"/>
+  </g>
+</svg>
