@@ -1,5 +1,7 @@
 # dsh-spend-trend
 
+<img src="assets/icon-180.png" width="72" height="72" alt="dsh-spend-trend icon" align="right">
+
 DeepSeek Harness 侧边栏插件：**峰谷计费时段 + 账户余额 + 近 7 天人民币花费**。
 
 [![npm](https://img.shields.io/npm/v/dsh-spend-trend)](https://www.npmjs.com/package/dsh-spend-trend)
