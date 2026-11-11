@@ -3,8 +3,10 @@
 ## 1.3.0 — 2026-11-11
 
 - Added custom alarm sounds: an **Import audio** button opens the system file picker and copies the clip into `$DSH_HOME/spend-trend-sounds/`; files copied there by hand appear in the picker too, re-scanned whenever the panel opens.
-- The host lists and serves those clips through two routes, rejecting hidden files, path traversal, unknown extensions and files over 4 MB.
-- Seven new tests cover the directory rules and the custom-preset behaviour (24 total).
+- Imported clips can be removed again from the panel, which falls back to the default voice.
+- The host lists, serves and deletes those clips through three routes, rejecting hidden files, path traversal, unknown extensions and files over 4 MB.
+- Fixed the custom-clip route registering with a trailing slash, which the host's prefix matcher never matched — newly imported clips could not play.
+- Fourteen new tests cover the directory rules, the routes and the custom-preset behaviour (31 total).
 
 ## 1.2.0 — 2026-11-11
 
