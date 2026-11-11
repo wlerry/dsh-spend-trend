@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.2.0 — 2026-11-11
+
+- Added the phase alarm: a configurable sound when the billing phase flips, an optional two-minute heads-up, and a notification when permission is granted.
+- Two bundled voice presets (mature and cute), served by the host from `assets/sounds/`, plus synthesised Ping, Chime and Bell tones.
+- Entering off-peak plays the selected voice, entering peak uses Ping, and the quiet window 22:00–06:00 Beijing time downgrades the voice to Ping.
+- Client rule helpers are exported through `__test` and covered by six new tests (17 total).
+
 ## 1.1.1 — 2026-11-11
 
 - Moved the repository to `github.com/wlerry/dsh-spend-trend` and updated every reference: package metadata, the GitHub install command, and the README screenshots.

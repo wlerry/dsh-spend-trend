@@ -14,7 +14,12 @@ import { createUsageCollector } from './lib/usage.js'
 export const inject = ['webServer', 'sessionPersistence']
 
 const ROUTE = '/plugin/dsh-spend-trend/daily'
+const SOUND_ROUTE = '/plugin/dsh-spend-trend/sound'
+const SOUND_DIR = new URL('./assets/sounds/', import.meta.url)
 const MAX_OFFSET_MINUTES = 14 * 60
+
+/** Bundled alarm clips, served one exact route each. */
+const SOUND_FILES = ['valley-mature.m4a', 'valley-cute.m4a']
 
 /**
  * Optional holiday calendar at `$DSH_HOME/spend-trend-holidays.json`, one
@@ -49,6 +54,24 @@ function json(status, body) {
       'cache-control': 'no-store',
     },
   })
+}
+
+/** Serve one bundled voice clip, or 404 for anything else. */
+function soundResource(file) {
+  let cached = null
+  return async () => {
+    try {
+      if (cached === null) cached = readFileSync(new URL(file, SOUND_DIR))
+    } catch {
+      return new Response('not found', { status: 404 })
+    }
+    return new Response(cached, {
+      headers: {
+        'content-type': 'audio/mp4',
+        'cache-control': 'public, max-age=86400',
+      },
+    })
+  }
 }
 
 export function apply(ctx) {
@@ -95,4 +118,12 @@ export function apply(ctx) {
     path: ROUTE,
     resource: respond,
   }))
+
+  for (const file of SOUND_FILES) {
+    ctx.effect(() => ctx.webServer.register({
+      kind: 'exact',
+      path: `${SOUND_ROUTE}/${file}`,
+      resource: soundResource(file),
+    }))
+  }
 }

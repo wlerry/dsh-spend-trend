@@ -2,6 +2,11 @@
  * Client half of the spend-trend bundle: a sidebar foot badge showing the live
  * DeepSeek billing phase (peak or off-peak), the countdown to the next switch,
  * and the account balance, plus a 7-day CNY spend chart in a popover.
+ *
+ * The popover also carries the switch alarm: an optional sound at the moment a
+ * phase changes (voice when entering off-peak, a short ping when entering
+ * peak), an optional two-minute heads-up, and a quiet window that replaces the
+ * voice with a tone between 22:00 and 06:00 Beijing time.
  */
 window.__ModuleLoader__.load({
   id: '@apecube/dsh-spend-trend',
@@ -10,9 +15,14 @@ window.__ModuleLoader__.load({
     const h = React.createElement
 
     const ROUTE = '/plugin/dsh-spend-trend/daily'
+    const SOUND_BASE = '/plugin/dsh-spend-trend/sound/'
     const DAY_MS = 24 * 60 * 60 * 1000
     const DATA_REFRESH_MS = 60_000
     const BALANCE_REFRESH_MS = 180_000
+    const ADVANCE_MS = 2 * 60 * 1000
+    const ALARM_KEY = 'dsh-spend-trend:alarm'
+    const QUIET_START_HOUR = 22
+    const QUIET_END_HOUR = 6
 
     const TEXT = {
       zh: {
@@ -38,8 +48,30 @@ window.__ModuleLoader__.load({
         loading: '读取中',
         empty: '近 7 天还没有消耗记录',
         close: '关闭',
-        toppedUp: '充值',
+        toppingUp: '充值',
         bonus: '赠送',
+        alarmTitle: '峰谷切换提醒',
+        alarmSwitch: '开启提醒',
+        alarmSound: '提醒音',
+        alarmPreview: '试听',
+        alarmAdvance: '提前 2 分钟',
+        alarmQuiet: '22:00–06:00 不播语音',
+        alarmDenied: '通知未授权，只响铃',
+        alarmPeak: '切到峰期',
+        alarmOff: '切到谷期',
+        notifyOffTitle: '已切换到谷期',
+        notifyOffBody: '现在开始半价，可以干活了',
+        notifyPeakTitle: '已切换到峰期',
+        notifyPeakBody: '现在是高峰价，注意用量',
+        notifyAdvanceTitle: '2 分钟后切换',
+        notifyAdvanceOffBody: '即将进入谷期',
+        notifyAdvancePeakBody: '即将进入峰期',
+        soundVoiceMature: '御姐音',
+        soundVoiceCute: '萝莉音',
+        soundPing: 'Ping',
+        soundChime: 'Chime',
+        soundBell: 'Bell',
+        soundNone: '静音',
       },
       en: {
         peak: 'Peak',
@@ -64,14 +96,75 @@ window.__ModuleLoader__.load({
         loading: 'Loading',
         empty: 'No usage recorded in the last 7 days',
         close: 'Close',
-        toppedUp: 'Topped up',
+        toppingUp: 'Topped up',
         bonus: 'Granted',
+        alarmTitle: 'Phase alarm',
+        alarmSwitch: 'Enable',
+        alarmSound: 'Sound',
+        alarmPreview: 'Preview',
+        alarmAdvance: '2-minute heads-up',
+        alarmQuiet: 'No voice 22:00–06:00',
+        alarmDenied: 'Notifications denied, sound only',
+        alarmPeak: 'Switch to peak',
+        alarmOff: 'Switch to off-peak',
+        notifyOffTitle: 'Off-peak started',
+        notifyOffBody: 'Half price from now on — time to work',
+        notifyPeakTitle: 'Peak started',
+        notifyPeakBody: 'Peak rates are in effect — mind your usage',
+        notifyAdvanceTitle: 'Switch in 2 minutes',
+        notifyAdvanceOffBody: 'Off-peak is about to start',
+        notifyAdvancePeakBody: 'Peak is about to start',
+        soundVoiceMature: 'Mature voice',
+        soundVoiceCute: 'Cute voice',
+        soundPing: 'Ping',
+        soundChime: 'Chime',
+        soundBell: 'Bell',
+        soundNone: 'Silent',
       },
     }
+
+    /** Alarm sounds, in menu order. `voice` presets are only used when entering off-peak. */
+    const SOUNDS = [
+      { id: 'voice-mature', kind: 'voice', file: 'valley-mature.m4a', labelKey: 'soundVoiceMature' },
+      { id: 'voice-cute', kind: 'voice', file: 'valley-cute.m4a', labelKey: 'soundVoiceCute' },
+      { id: 'ping', kind: 'tone', labelKey: 'soundPing' },
+      { id: 'chime', kind: 'tone', labelKey: 'soundChime' },
+      { id: 'bell', kind: 'tone', labelKey: 'soundBell' },
+      { id: 'none', kind: 'none', labelKey: 'soundNone' },
+    ]
+
+    const DEFAULT_ALARM = { enabled: false, sound: 'voice-mature', advance: false }
 
     const WEEKDAYS = {
       zh: ['日', '一', '二', '三', '四', '五', '六'],
       en: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'],
+    }
+
+    /** Beijing hour (0-23) of one instant. */
+    function beijingHour(time) {
+      return new Date(time + 8 * 60 * 60 * 1000).getUTCHours()
+    }
+
+    /** Whether the quiet window (22:00-06:00 Beijing) covers this instant. */
+    function isQuietHours(time) {
+      const hour = beijingHour(time)
+      return hour >= QUIET_START_HOUR || hour < QUIET_END_HOUR
+    }
+
+    /**
+     * Resolve the sound to play for one switch.
+     * @param preset - the selected preset id.
+     * @param nextPhase - the phase being entered (`off` or `peak`).
+     * @param time - the instant of the switch.
+     */
+    function chooseSound(preset, nextPhase, time) {
+      if (preset === 'none') return null
+      const entry = SOUNDS.find((sound) => sound.id === preset)
+      // Peak entry always uses a short tone: the voice line is about off-peak.
+      if (nextPhase !== 'off') return 'ping'
+      if (entry === undefined) return 'ping'
+      if (entry.kind === 'voice' && isQuietHours(time)) return 'ping'
+      return entry.id
     }
 
     function pickLocale(ctx) {
@@ -83,6 +176,29 @@ window.__ModuleLoader__.load({
       }
       const fallback = String(globalThis.navigator?.language ?? 'zh')
       return fallback.toLowerCase().startsWith('zh') ? 'zh' : 'en'
+    }
+
+    function loadAlarm() {
+      try {
+        const raw = globalThis.localStorage?.getItem(ALARM_KEY)
+        if (raw === null || raw === undefined) return { ...DEFAULT_ALARM }
+        const parsed = JSON.parse(raw)
+        return {
+          enabled: parsed?.enabled === true,
+          sound: SOUNDS.some((sound) => sound.id === parsed?.sound) ? parsed.sound : DEFAULT_ALARM.sound,
+          advance: parsed?.advance === true,
+        }
+      } catch {
+        return { ...DEFAULT_ALARM }
+      }
+    }
+
+    function saveAlarm(value) {
+      try {
+        globalThis.localStorage?.setItem(ALARM_KEY, JSON.stringify(value))
+      } catch {
+        /* storage can be unavailable; the setting then lasts for this page */
+      }
     }
 
     function utcOffsetMinutes() {
@@ -176,7 +292,7 @@ window.__ModuleLoader__.load({
       }
     }
 
-    /** Remaining time until the next phase switch, as h:mm or mm:ss. */
+    /** Remaining time until a switch, as h:mm or mm:ss. */
     function remaining(until, now, compact = false) {
       const total = Math.max(0, Math.floor((until - now) / 1000))
       const hours = Math.floor(total / 3600)
@@ -284,17 +400,148 @@ window.__ModuleLoader__.load({
       footValue: { fontVariantNumeric: 'tabular-nums' },
       hint: { color: 'var(--dsw-alias-label-tertiary)', fontSize: 11, marginTop: 4, whiteSpace: 'normal' },
       empty: { color: 'var(--dsw-alias-label-tertiary)', textAlign: 'center', padding: '20px 0 12px' },
+      settings: {
+        marginTop: 10,
+        paddingTop: 8,
+        borderTop: '0.5px solid var(--dsw-alias-border-l2)',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 6,
+      },
+      settingRow: { display: 'flex', alignItems: 'center', gap: 8, justifyContent: 'space-between' },
+      settingLabel: { color: 'var(--dsw-alias-label-secondary)' },
+      control: {
+        font: 'inherit',
+        fontSize: 11,
+        color: 'var(--dsw-alias-label-primary)',
+        background: 'var(--dsw-alias-bg-layer-3, var(--dsw-alias-bg-layer-2))',
+        border: '0.5px solid var(--dsw-alias-border-l2)',
+        borderRadius: 'var(--dsw-radius-sm)',
+        padding: '2px 4px',
+      },
+      smallButton: {
+        font: 'inherit',
+        fontSize: 11,
+        color: 'var(--dsw-alias-label-secondary)',
+        background: 'transparent',
+        border: '0.5px solid var(--dsw-alias-border-l2)',
+        borderRadius: 'var(--dsw-radius-sm)',
+        padding: '1px 6px',
+        cursor: 'pointer',
+      },
+      note: { fontSize: 10, color: 'var(--dsw-alias-label-tertiary)', marginTop: 2 },
     }
 
     const CSS = `
       .dsh-spend-trend-badge:hover { background: var(--dsw-alias-interactive-bg-hover); }
       .dsh-spend-trend-badge:focus-visible { outline: 2px solid var(--dsw-focus-ring-color, var(--dsw-alias-state-business-primary)); outline-offset: -2px; }
       .dsh-spend-trend-close:hover { background: var(--dsw-alias-interactive-bg-hover); color: var(--dsw-alias-label-primary); }
+      .dsh-spend-trend-flash { animation: dsh-spend-trend-flash 0.9s ease-in-out 4; }
+      @keyframes dsh-spend-trend-flash {
+        0%, 100% { background: transparent; }
+        50% { background: var(--dsw-alias-state-business-tertiary); }
+      }
     `
+
+    /** Web Audio engine: synthesised tones plus the bundled voice clips. */
+    function createAudio() {
+      let context = null
+      const buffers = new Map()
+
+      function audioContext() {
+        if (context !== null) return context
+        const Ctor = globalThis.AudioContext ?? globalThis.webkitAudioContext
+        if (Ctor === undefined) return null
+        context = new Ctor()
+        return context
+      }
+
+      /** Resume the context after a user gesture; called when the panel opens. */
+      function unlock() {
+        const audio = audioContext()
+        if (audio === null) return
+        if (audio.state === 'suspended') audio.resume().catch(() => {})
+        // A silent buffer marks the first user gesture on some platforms.
+        const buffer = audio.createBuffer(1, 1, 22050)
+        const source = audio.createBufferSource()
+        source.buffer = buffer
+        source.connect(audio.destination)
+        source.start(0)
+      }
+
+      function tone(kind) {
+        const audio = audioContext()
+        if (audio === null) return
+        const now = audio.currentTime
+        const notes = kind === 'chime'
+          ? [[523.25, 0], [659.25, 0.14], [783.99, 0.28]]
+          : kind === 'bell'
+            ? [[440, 0], [880, 0]]
+            : [[880, 0]]
+        const duration = kind === 'bell' ? 1.4 : kind === 'chime' ? 1.0 : 0.45
+        const master = audio.createGain()
+        master.gain.value = 0.18
+        master.connect(audio.destination)
+        for (const [frequency, offset] of notes) {
+          const oscillator = audio.createOscillator()
+          const gain = audio.createGain()
+          oscillator.type = kind === 'bell' ? 'triangle' : 'sine'
+          oscillator.frequency.value = frequency
+          gain.gain.setValueAtTime(0, now + offset)
+          gain.gain.linearRampToValueAtTime(kind === 'bell' ? 0.25 : 0.5, now + offset + 0.01)
+          gain.gain.exponentialRampToValueAtTime(0.001, now + offset + duration)
+          oscillator.connect(gain)
+          gain.connect(master)
+          oscillator.start(now + offset)
+          oscillator.stop(now + offset + duration + 0.05)
+        }
+      }
+
+      async function voice(file) {
+        const audio = audioContext()
+        if (audio === null) return
+        let buffer = buffers.get(file)
+        if (buffer === undefined) {
+          const response = await fetch(`${SOUND_BASE}${file}`)
+          if (!response.ok) return
+          const bytes = await response.arrayBuffer()
+          buffer = await audio.decodeAudioData(bytes)
+          buffers.set(file, buffer)
+        }
+        const source = audio.createBufferSource()
+        source.buffer = buffer
+        source.connect(audio.destination)
+        source.start(0)
+      }
+
+      function play(soundId) {
+        if (soundId === null || soundId === undefined) return
+        const entry = SOUNDS.find((sound) => sound.id === soundId)
+        if (entry === undefined || entry.kind === 'none') return
+        if (entry.kind === 'voice') {
+          voice(entry.file).catch(() => {})
+          return
+        }
+        tone(entry.id)
+      }
+
+      return { unlock, play }
+    }
+
+    function notify(title, body) {
+      try {
+        if (globalThis.Notification?.permission !== 'granted') return
+        // eslint-disable-next-line no-new -- the notification is fire-and-forget
+        new globalThis.Notification(title, { body, silent: true })
+      } catch {
+        /* notifications are best effort */
+      }
+    }
 
     function apply(ctx) {
       const locale = pickLocale(ctx)
       const text = TEXT[locale]
+      const audio = createAudio()
 
       function Bars({ daily }) {
         const days = daily.days
@@ -329,7 +576,72 @@ window.__ModuleLoader__.load({
         return `${text.cacheHit} ¥${prices.hit} · ${text.cacheMiss} ¥${prices.miss} · ${text.output} ¥${prices.output}`
       }
 
-      function Panel({ daily, balance, phase, position, panelRef, onClose }) {
+      function SoundPicker({ alarm, onChange }) {
+        return h('select', {
+          className: 'dsh-spend-trend-select',
+          style: styles.control,
+          value: alarm.sound,
+          'aria-label': text.alarmSound,
+          onChange: (event) => onChange({ ...alarm, sound: event.target.value }),
+        }, SOUNDS.map((sound) => h('option', { key: sound.id, value: sound.id }, text[sound.labelKey])))
+      }
+
+      function AlarmSettings({ alarm, onChange, denied }) {
+        const enable = async (next) => {
+          if (next) {
+            audio.unlock()
+            try {
+              if (globalThis.Notification?.permission === 'default') await globalThis.Notification.requestPermission()
+            } catch {
+              /* a refused prompt leaves sound-only mode */
+            }
+          }
+          onChange({ ...alarm, enabled: next })
+        }
+        return h('div', { style: styles.settings }, [
+          h('div', { key: 'switch', style: styles.settingRow }, [
+            h('span', { key: 'l', style: { ...styles.settingLabel, color: 'var(--dsw-alias-label-primary)' } }, text.alarmTitle),
+            h('label', { key: 'c', style: { ...styles.settingRow, gap: 6, cursor: 'pointer' } }, [
+              h('span', { key: 't', style: styles.settingLabel }, text.alarmSwitch),
+              h('input', {
+                key: 'i',
+                type: 'checkbox',
+                checked: alarm.enabled,
+                'aria-label': text.alarmSwitch,
+                onChange: (event) => enable(event.target.checked),
+              }),
+            ]),
+          ]),
+          alarm.enabled ? h('div', { key: 'sound', style: styles.settingRow }, [
+            h('span', { key: 'l', style: styles.settingLabel }, text.alarmSound),
+            h('span', { key: 'c', style: { display: 'flex', alignItems: 'center', gap: 6 } }, [
+              h(SoundPicker, { key: 's', alarm, onChange }),
+              h('button', {
+                key: 'p',
+                type: 'button',
+                style: styles.smallButton,
+                onClick: () => { audio.unlock(); audio.play(alarm.sound) },
+              }, text.alarmPreview),
+            ]),
+          ]) : null,
+          alarm.enabled ? h('div', { key: 'advance', style: styles.settingRow }, [
+            h('span', { key: 'l', style: styles.settingLabel }, text.alarmAdvance),
+            h('input', {
+              key: 'i',
+              type: 'checkbox',
+              checked: alarm.advance,
+              'aria-label': text.alarmAdvance,
+              onChange: (event) => onChange({ ...alarm, advance: event.target.checked }),
+            }),
+          ]) : null,
+          alarm.enabled ? h('div', { key: 'note', style: styles.note }, [
+            text.alarmQuiet,
+            denied ? ` · ${text.alarmDenied}` : '',
+          ].join('')) : null,
+        ])
+      }
+
+      function Panel({ daily, balance, phase, alarm, setAlarm, position, panelRef, onClose }) {
         const days = daily?.days ?? []
         const weekTotal = days.reduce((sum, day) => sum + (Number(day.cost) || 0), 0)
         const previous = days.slice(0, -1)
@@ -340,6 +652,7 @@ window.__ModuleLoader__.load({
         const money = summarize(balance)
         const kind = phase.kind
         const prices = kind === 'peak' ? phase.peak ?? null : phase.offPeak ?? null
+        const denied = globalThis.Notification?.permission === 'denied'
 
         return h('div', {
           ref: panelRef,
@@ -393,10 +706,11 @@ window.__ModuleLoader__.load({
             key: 'detail',
             style: { ...styles.footRow, marginTop: 2, color: 'var(--dsw-alias-label-tertiary)' },
           }, [
-            h('span', { key: 'l', style: styles.footLabel }, text.toppedUp),
+            h('span', { key: 'l', style: styles.footLabel }, text.toppingUp),
             h('span', { key: 'v', style: styles.footValue }, `${money.toppedUp} · ${text.bonus} ${money.bonus}`),
           ]),
           h('div', { key: 'hint', style: styles.hint }, text.schedule),
+          h(AlarmSettings, { key: 'alarm', alarm, denied, onChange: setAlarm }),
         ])
       }
 
@@ -407,9 +721,17 @@ window.__ModuleLoader__.load({
         const [open, setOpen] = React.useState(false)
         const [position, setPosition] = React.useState(null)
         const [now, setNow] = React.useState(() => Date.now())
+        const [alarm, setAlarmState] = React.useState(loadAlarm)
+        const [flash, setFlash] = React.useState(false)
         const buttonRef = React.useRef(null)
         const panelRef = React.useRef(null)
         const loadedAt = React.useRef(0)
+        const fired = React.useRef({ until: 0, advance: false, switched: false })
+
+        const setAlarm = (next) => {
+          setAlarmState(next)
+          saveAlarm(next)
+        }
 
         const load = React.useCallback(() => {
           let cancelled = false
@@ -464,6 +786,43 @@ window.__ModuleLoader__.load({
           load()
         }, [now, daily, load])
 
+        // Switch alarm: fires once per phase boundary for the sound and once
+        // for the optional heads-up.
+        React.useEffect(() => {
+          const phase = daily?.phase
+          if (phase === undefined || typeof phase.until !== 'number') return
+          if (fired.current.until !== phase.until) {
+            fired.current = { until: phase.until, advance: false, switched: false }
+          }
+          if (!alarm.enabled) return
+          const nextPhase = phase.kind === 'peak' ? 'off' : 'peak'
+          if (alarm.advance && !fired.current.advance && now >= phase.until - ADVANCE_MS && now < phase.until) {
+            fired.current.advance = true
+            audio.play('chime')
+            notify(
+              text.notifyAdvanceTitle,
+              nextPhase === 'off' ? text.notifyAdvanceOffBody : text.notifyAdvancePeakBody,
+            )
+          }
+          if (!fired.current.switched && now >= phase.until) {
+            fired.current.switched = true
+            audio.play(chooseSound(alarm.sound, nextPhase, now))
+            notify(
+              nextPhase === 'off' ? text.notifyOffTitle : text.notifyPeakTitle,
+              nextPhase === 'off' ? text.notifyOffBody : text.notifyPeakBody,
+            )
+            setFlash(true)
+            setTimeout(() => setFlash(false), 4000)
+          }
+        }, [now, daily, alarm, text])
+
+        React.useEffect(() => {
+          if (!alarm.enabled) return undefined
+          const unlock = () => audio.unlock()
+          document.addEventListener('pointerdown', unlock, { once: true })
+          return () => document.removeEventListener('pointerdown', unlock)
+        }, [alarm.enabled])
+
         React.useEffect(() => {
           if (!open) return undefined
           const onPointerDown = (event) => {
@@ -486,10 +845,7 @@ window.__ModuleLoader__.load({
         const money = summarize(balance)
         const kind = phase.kind
         const countdown = typeof phase.until === 'number' ? remaining(phase.until, now, true) : '—'
-        const hint = typeof phase.until === 'number'
-          ? `${kind === 'peak' ? text.nextOff : text.nextPeak} ${remaining(phase.until, now)}`
-          : ''
-        const title = `${text[kind]} · ${hint} · ${text.balance} ${money === null ? '—' : money.text}`
+        const title = `${text[kind]} · ${text.balance} ${money === null ? '—' : money.text}`
 
         const toggle = () => {
           if (open) {
@@ -501,6 +857,7 @@ window.__ModuleLoader__.load({
             const left = Math.max(8, Math.min(rect.left, window.innerWidth - 320))
             setPosition({ left, bottom: Math.max(8, window.innerHeight - rect.top + 8) })
           }
+          audio.unlock()
           setOpen(true)
           setNow(Date.now())
         }
@@ -511,7 +868,7 @@ window.__ModuleLoader__.load({
             key: 'badge',
             ref: buttonRef,
             type: 'button',
-            className: 'dsh-spend-trend-badge',
+            className: `dsh-spend-trend-badge${flash ? ' dsh-spend-trend-flash' : ''}`,
             style: styles.button,
             onClick: toggle,
             title,
@@ -532,6 +889,8 @@ window.__ModuleLoader__.load({
               daily,
               balance,
               phase,
+              alarm,
+              setAlarm,
               position,
               panelRef,
               onClose: () => setOpen(false),
@@ -547,6 +906,10 @@ window.__ModuleLoader__.load({
       }, SpendTrendBadge))
     }
 
-    return { inject: ['slots'], apply }
+    return {
+      inject: ['slots'],
+      apply,
+      __test: { isQuietHours, chooseSound, SOUNDS, DEFAULT_ALARM },
+    }
   },
 })

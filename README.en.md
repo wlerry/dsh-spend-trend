@@ -51,6 +51,18 @@ Under the official rules, Chinese statutory holidays bill off-peak all day. No h
 
 A missing or malformed file means "no holidays"; it never blocks startup.
 
+## Phase alarm
+
+The popover can notify you when the billing phase flips (off by default):
+
+| Setting | Meaning |
+|---|---|
+| Enable | Master switch; asks for notification permission on first use, and falls back to sound only when denied |
+| Sound | Mature voice / Cute voice / Ping / Chime / Bell / Silent, with a preview button |
+| 2-minute heads-up | Off by default; plays a light chime two minutes before the switch |
+
+Rules: entering **off-peak** plays the selected voice, entering **peak** always uses Ping, and between **22:00 and 06:00 Beijing time** the voice is replaced by Ping. Settings live in browser `localStorage` (per device). The page must be open for the alarm to fire; a sleeping machine stays silent and catches up once on wake.
+
 ## Data sources
 
 - **Spend**: the host reads the persisted session logs, takes the model-reported `usage` from `assistant/message`, prices each event at its own tier, and folds the result into 15-minute buckets over a 7-day window.
@@ -81,6 +93,7 @@ A backgrounded page makes no extra requests and refreshes once when it becomes v
 | `assets/icon-source.png` | Original icon artwork (1254×1254, not shipped in the npm package) |
 | `assets/screenshots/*.png` | Market detail-page screenshots |
 | `screenshots.json` | Declares the screenshot order the market shows |
+| `assets/sounds/*.m4a` | Phase-alarm voice clips (mature / cute) |
 
 ## Install / uninstall
 
