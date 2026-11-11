@@ -74,7 +74,7 @@ dsh plugin --profile <profile> add github:wlerry/dsh-spend-trend
 | 设置 | 说明 |
 |---|---|
 | 开启提醒 | 总开关；首次开启时请求系统通知权限，拒绝则只响铃 |
-| 提醒音 | 御姐音 / 萝莉音 / Ping / Chime / Bell / 静音，可试听；放在 `~/.dsh/spend-trend-sounds/` 的自定义音频也会出现在这里 |
+| 提醒音 | 御姐音 / 萝莉音 / 别摸鱼了 / Ping / Chime / Bell / 静音，可试听；放在 `~/.dsh/spend-trend-sounds/` 的自定义音频也会出现在这里 |
 | 提前 2 分钟 | 默认关；开启后在切换前 2 分钟播一声轻提示 |
 
 规则：**切到谷期**播你选的语音，**切到峰期**一律用 Ping；北京时间 **22:00–06:00 不播语音**，自动降级为 Ping。设置存在浏览器 `localStorage`（按设备生效）；页面需要开着才会响，系统睡眠期间不会响，醒来后会补一次。
@@ -165,7 +165,7 @@ macOS、Windows、Linux 都能用：插件是纯 JavaScript，主机侧只用到
 | `assets/icon-180.png` | 插件市场卡片用的 180×180 位图 |
 | `assets/icon-source.png` | 图标设计原稿（1254×1254，不进 npm 包） |
 | `assets/screenshots/*.png` | 市场详情页截图 |
-| `assets/sounds/*.m4a` | 峰谷提醒语音（御姐音 / 萝莉音） |
+| `assets/sounds/*.m4a` | 峰谷提醒语音（御姐音 / 萝莉音 / 别摸鱼了） |
 | `screenshots.json` | 声明市场展示的截图顺序（市场从仓库读取） |
 
 ## 开发

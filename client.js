@@ -71,6 +71,7 @@ window.__ModuleLoader__.load({
         notifyAdvancePeakBody: '即将进入峰期',
         soundVoiceMature: '御姐音',
         soundVoiceCute: '萝莉音',
+        soundVoiceSlack: '别摸鱼了',
         soundPing: 'Ping',
         soundChime: 'Chime',
         soundBell: 'Bell',
@@ -123,6 +124,7 @@ window.__ModuleLoader__.load({
         notifyAdvancePeakBody: 'Peak is about to start',
         soundVoiceMature: 'Mature voice',
         soundVoiceCute: 'Cute voice',
+        soundVoiceSlack: 'Stop slacking',
         soundPing: 'Ping',
         soundChime: 'Chime',
         soundBell: 'Bell',
@@ -138,6 +140,7 @@ window.__ModuleLoader__.load({
     const SOUNDS = [
       { id: 'voice-mature', kind: 'voice', file: 'valley-mature.m4a', labelKey: 'soundVoiceMature' },
       { id: 'voice-cute', kind: 'voice', file: 'valley-cute.m4a', labelKey: 'soundVoiceCute' },
+      { id: 'voice-slack', kind: 'voice', file: 'valley-slack.m4a', labelKey: 'soundVoiceSlack' },
       { id: 'ping', kind: 'tone', labelKey: 'soundPing' },
       { id: 'chime', kind: 'tone', labelKey: 'soundChime' },
       { id: 'bell', kind: 'tone', labelKey: 'soundBell' },

@@ -23,7 +23,7 @@ const SOUND_DIR = new URL('./assets/sounds/', import.meta.url)
 const MAX_OFFSET_MINUTES = 14 * 60
 
 /** Bundled alarm clips, served one exact route each. */
-const SOUND_FILES = ['valley-mature.m4a', 'valley-cute.m4a']
+const SOUND_FILES = ['valley-mature.m4a', 'valley-cute.m4a', 'valley-slack.m4a']
 
 /**
  * Optional holiday calendar at `$DSH_HOME/spend-trend-holidays.json`, one

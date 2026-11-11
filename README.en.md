@@ -74,7 +74,7 @@ The popover can notify you when the billing phase flips (off by default):
 | Setting | Meaning |
 |---|---|
 | Enable | Master switch; asks for notification permission on first use and falls back to sound only when denied |
-| Sound | Mature voice / Cute voice / Ping / Chime / Bell / Silent, with a preview button; clips dropped into `~/.dsh/spend-trend-sounds/` appear here too |
+| Sound | Mature voice / Cute voice / Stop slacking / Ping / Chime / Bell / Silent, with a preview button; clips dropped into `~/.dsh/spend-trend-sounds/` appear here too |
 | 2-minute heads-up | Off by default; plays a light chime two minutes before the switch |
 
 Rules: entering **off-peak** plays the selected voice, entering **peak** always uses Ping, and between **22:00 and 06:00 Beijing time** the voice is replaced by Ping. Settings live in browser `localStorage` (per device). The page must stay open for the alarm to fire; a sleeping machine stays silent and catches up once on wake.
@@ -165,7 +165,7 @@ A backgrounded page makes no extra requests and refreshes once when it becomes v
 | `assets/icon-180.png` | 180×180 raster tile for the plugin market card |
 | `assets/icon-source.png` | Original icon artwork (1254×1254, not shipped in the npm package) |
 | `assets/screenshots/*.png` | Market detail-page screenshots |
-| `assets/sounds/*.m4a` | Phase-alarm voices (mature / cute) |
+| `assets/sounds/*.m4a` | Phase-alarm voices (mature / cute / stop slacking) |
 | `screenshots.json` | Declares the screenshot order the market shows |
 
 ## Development

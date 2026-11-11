@@ -79,6 +79,6 @@ test('the silent preset plays nothing', () => {
 test('every preset is unique and both voices are bundled', () => {
   const ids = rules.SOUNDS.map((sound) => sound.id)
   assert.equal(new Set(ids).size, ids.length)
-  assert.deepEqual([...ids].slice(0, 2), ['voice-mature', 'voice-cute'])
+  assert.deepEqual([...ids].slice(0, 3), ['voice-mature', 'voice-cute', 'voice-slack'])
   assert.equal(ids.includes('none'), true)
 })
