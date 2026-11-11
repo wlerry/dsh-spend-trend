@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.1.1 — 2026-11-11
+
+- Moved the repository to `github.com/wlerry/dsh-spend-trend` and updated every reference: package metadata, the GitHub install command, and the README screenshots.
+- CI now runs the suite on Ubuntu, Windows and macOS across Node 20, 22 and 24; the README documents platform support.
+
 ## 1.1.0 — 2026-11-11
 
 - Split the host half into `lib/pricing.js` (tariff table, Beijing-time peak/off-peak schedule, per-call cost) and `lib/usage.js` (session-log folding and day window), leaving `index.js` as the route wiring.

@@ -16,9 +16,9 @@ DeepSeek Harness 侧边栏插件：**峰谷计费时段 + 账户余额 + 近 7 �
 
 ## 截图
 
-![侧边栏徽标](https://raw.githubusercontent.com/fylz1125/dsh-spend-trend/main/assets/screenshots/01-badge.png)
+![侧边栏徽标](https://raw.githubusercontent.com/wlerry/dsh-spend-trend/main/assets/screenshots/01-badge.png)
 
-![展开面板](https://raw.githubusercontent.com/fylz1125/dsh-spend-trend/main/assets/screenshots/02-panel.png)
+![展开面板](https://raw.githubusercontent.com/wlerry/dsh-spend-trend/main/assets/screenshots/02-panel.png)
 
 ## 平台支持
 
@@ -93,7 +93,7 @@ dsh plugin --profile <profile> add @apecube/dsh-spend-trend
 直接从 GitHub 安装：
 
 ```sh
-dsh plugin --profile <profile> add github:fylz1125/dsh-spend-trend
+dsh plugin --profile <profile> add github:wlerry/dsh-spend-trend
 ```
 
 在 DSH 桌面端也可以走 **设置 → 插件** 里的安装入口。卸载：

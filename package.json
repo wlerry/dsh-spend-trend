@@ -1,10 +1,10 @@
 {
   "name": "@apecube/dsh-spend-trend",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "Sidebar badge for DeepSeek Harness: current peak/off-peak billing phase, countdown, account balance and a 7-day CNY spend chart.",
   "type": "module",
   "license": "MIT",
-  "author": "fylz1125",
+  "author": "wlerry",
   "keywords": [
     "dsh",
     "dsh-plugin",
@@ -15,13 +15,13 @@
     "peak",
     "billing"
   ],
-  "homepage": "https://github.com/fylz1125/dsh-spend-trend#readme",
+  "homepage": "https://github.com/wlerry/dsh-spend-trend#readme",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/fylz1125/dsh-spend-trend.git"
+    "url": "git+https://github.com/wlerry/dsh-spend-trend.git"
   },
   "bugs": {
-    "url": "https://github.com/fylz1125/dsh-spend-trend/issues"
+    "url": "https://github.com/wlerry/dsh-spend-trend/issues"
   },
   "engines": {
     "dsh": ">=0.2.2-rc.1",

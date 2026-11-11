@@ -16,9 +16,9 @@ One badge at the bottom of the sidebar, directly above the account entry:
 
 ## Screenshots
 
-![Sidebar badge](https://raw.githubusercontent.com/fylz1125/dsh-spend-trend/main/assets/screenshots/01-badge.png)
+![Sidebar badge](https://raw.githubusercontent.com/wlerry/dsh-spend-trend/main/assets/screenshots/01-badge.png)
 
-![Expanded panel](https://raw.githubusercontent.com/fylz1125/dsh-spend-trend/main/assets/screenshots/02-panel.png)
+![Expanded panel](https://raw.githubusercontent.com/wlerry/dsh-spend-trend/main/assets/screenshots/02-panel.png)
 
 ## Platform support
 
@@ -93,7 +93,7 @@ dsh plugin --profile <profile> add @apecube/dsh-spend-trend
 Straight from GitHub:
 
 ```sh
-dsh plugin --profile <profile> add github:fylz1125/dsh-spend-trend
+dsh plugin --profile <profile> add github:wlerry/dsh-spend-trend
 ```
 
 On DSH Desktop you can also use the install entry under **Settings → Plugins**. To remove it:
