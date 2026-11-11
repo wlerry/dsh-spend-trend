@@ -2,3 +2,6 @@ node_modules/
 .DS_Store
 *.log
 .plugin-market-cache/
+
+# local-only promo handoff (video production briefs)
+promo/
