@@ -1,5 +1,5 @@
 {
-  "name": "@lerry/dsh-spend-trend",
+  "name": "@apecube/dsh-spend-trend",
   "version": "1.1.0",
   "description": "Sidebar badge for DeepSeek Harness: current peak/off-peak billing phase, countdown, account balance and a 7-day CNY spend chart.",
   "type": "module",
