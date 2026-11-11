@@ -14,6 +14,12 @@ DeepSeek Harness 侧边栏插件：**峰谷计费时段 + 账户余额 + 近 7 �
 - **当前计费时段**：`● 峰期` / `● 谷期`（官方峰谷定价），后面是距下一次切换的倒计时，最右是**账户余额**；
 - 点击弹出面板：**最近 7 天花费（人民币）柱状图**、当前模型单价、今日花费、合计/日均、余额构成、峰谷时段表。
 
+## 截图
+
+![侧边栏徽标](https://raw.githubusercontent.com/fylz1125/dsh-spend-trend/main/assets/screenshots/01-badge.png)
+
+![展开面板](https://raw.githubusercontent.com/fylz1125/dsh-spend-trend/main/assets/screenshots/02-panel.png)
+
 ## 计费口径
 
 DeepSeek 自 2026-08-17 起实行峰谷分时定价，本插件按**每次调用实际发生时刻**的档位计价（不是按天、也不是按当前时刻）：
@@ -69,6 +75,8 @@ DeepSeek 自 2026-08-17 起实行峰谷分时定价，本插件按**每次调用
 | `icon.svg` | 插件列表图标（矢量：宝蓝底 + 紫色角部高光 + 折线 + 峰/谷两个色点） |
 | `assets/icon-180.png` | 插件市场卡片用的 180×180 位图 |
 | `assets/icon-source.png` | 图标设计原稿（1254×1254，不进 npm 包） |
+| `assets/screenshots/*.png` | 市场详情页截图 |
+| `screenshots.json` | 声明市场展示的截图顺序（市场从仓库读取） |
 
 ## 安装 / 卸载
 

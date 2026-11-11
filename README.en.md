@@ -14,6 +14,12 @@ One badge at the bottom of the sidebar, directly above the account entry:
 - **Current billing phase**: `● Peak` / `● Off-peak` under DeepSeek's official time-of-day pricing, followed by a countdown to the next switch, with the **account balance** on the right.
 - Click it to open a panel with a **7-day CNY spend bar chart**, the current model's rates, today's spend, total and daily average, the balance breakdown, and the peak/off-peak schedule.
 
+## Screenshots
+
+![Sidebar badge](https://raw.githubusercontent.com/fylz1125/dsh-spend-trend/main/assets/screenshots/01-badge.png)
+
+![Expanded panel](https://raw.githubusercontent.com/fylz1125/dsh-spend-trend/main/assets/screenshots/02-panel.png)
+
 ## Billing model
 
 DeepSeek has charged peak/off-peak time-of-day rates since 2026-08-17. Every call is priced at the tier in effect **when that call actually happened** — not per day, and not at the current instant:
@@ -69,6 +75,8 @@ A backgrounded page makes no extra requests and refreshes once when it becomes v
 | `icon.svg` | Plugin-list icon (vector: royal blue tile, violet corner highlights, a wave, peak/valley dots) |
 | `assets/icon-180.png` | 180×180 raster tile for the plugin market card |
 | `assets/icon-source.png` | Original icon artwork (1254×1254, not shipped in the npm package) |
+| `assets/screenshots/*.png` | Market detail-page screenshots |
+| `screenshots.json` | Declares the screenshot order the market shows |
 
 ## Install / uninstall
 
