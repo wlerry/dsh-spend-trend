@@ -50,6 +50,12 @@ dsh plugin --profile <profile> add github:wlerry/dsh-spend-trend
 
 ![展开面板](https://raw.githubusercontent.com/wlerry/dsh-spend-trend/main/assets/screenshots/02-panel.png)
 
+## 视频
+
+![消耗峰谷图 30 秒演示](https://raw.githubusercontent.com/wlerry/dsh-spend-trend/main/assets/screenshots/03-video-poster.png)
+
+30 秒讲清楚它解决什么问题：谷时到了它会喊你，峰时先看一眼余额。（B 站链接补充中）
+
 ## 怎么用：错峰工作法
 
 | 时段 | 适合干什么 | 为什么 |
@@ -88,6 +94,26 @@ dsh plugin --profile <profile> add github:wlerry/dsh-spend-trend
 3. 导入后自动选中，点「试听」确认。
 
 文件会存到 `$DSH_HOME/spend-trend-sounds/`（默认 `~/.dsh/spend-trend-sounds/`），也可以手动把文件拷进去。文件名就是下拉菜单里的选项名，重名会自动加 `-2`；打开面板时会重新扫描，删掉文件后会自动回落到默认语音。
+
+## 常见问题
+
+**没听到提醒声？**
+先点一下页面任意位置——浏览器在页面加载后没有交互时会挂起音频；其次确认面板里「开启提醒」是勾上的、提醒音不是「静音」。如果切换瞬间只看到徽标闪烁和通知，说明触发正常，只是声音被系统拦了，下次点页面会补播。
+
+**导入的音频播不了？**
+确认格式是 mp3 / m4a / wav / ogg、单文件不超过 4 MB；导入后在「提醒音」里选中它并点「试听」。实在不行换一个文件重导，坏文件会被拒绝而不是悄悄存下来。
+
+**余额显示「—」？**
+说明账户接口没返回数据，通常是没登录或登录已过期。去 设置 → 账户 重新登录即可。
+
+**数字和平台账单对不上？**
+这里按「每次调用发生时刻的档位」估算，是预估值；平台账单可能有折扣、赠送额度抵扣等。缓存命中率越高，峰谷差价越集中在缓存命中那一档（¥0.04 vs ¥0.02）。
+
+**Windows 上装完没反应？**
+插件页确认它处于「已启用」，然后重启一次 App；客户端 bundle 要重新加载才会出现徽标。
+
+**半夜会被吵醒吗？**
+不会。语音只在切到谷期时播，而峰谷切换只发生在北京时间 09:00、12:00、14:00、18:00；另外 22:00–06:00 一律不播语音，只响提示音。
 
 ## 计费口径
 
@@ -164,7 +190,7 @@ macOS、Windows、Linux 都能用：插件是纯 JavaScript，主机侧只用到
 | `icon.svg` | 插件列表图标（矢量） |
 | `assets/icon-180.png` | 插件市场卡片用的 180×180 位图 |
 | `assets/icon-source.png` | 图标设计原稿（1254×1254，不进 npm 包） |
-| `assets/screenshots/*.png` | 市场详情页截图 |
+| `assets/screenshots/*.png` | 市场详情页截图 + 视频海报 |
 | `assets/sounds/*.m4a` | 峰谷提醒语音（御姐音 / 萝莉音 / 别摸鱼了） |
 | `screenshots.json` | 声明市场展示的截图顺序（市场从仓库读取） |
 
@@ -185,6 +211,33 @@ node --test test/     # 17 个用例：峰谷边界、周末/节假日、两档�
 | `test/` | 纯函数、聚合与提醒规则的单测 |
 
 CI 在 Ubuntu / Windows / macOS × Node 20/22/24 上跑语法检查、测试和 manifest 检查。
+
+## 更新与卸载
+
+**更新**：插件页会提示有新版本，点更新即可；也可以卸载后重新安装。
+
+**卸载**：
+
+```sh
+dsh plugin --profile <profile> remove @apecube/dsh-spend-trend
+```
+
+桌面端也可以在插件页里移除。
+
+**卸载后可能残留**（按需手动删除）：
+
+| 位置 | 内容 |
+|---|---|
+| `~/.dsh/spend-trend-sounds/` | 你导入的自定义音频 |
+| `~/.dsh/spend-trend-holidays.json` | 自定义节假日表 |
+| 浏览器 localStorage | 提醒开关、所选音色、提前提醒设置 |
+
+## 权限与隐私
+
+- **通知**：只在开启提醒时请求一次，用途仅是峰谷切换通知；拒绝也能正常使用（只响铃）。
+- **数据**：只读本机会话日志里的 token 用量，不访问外网、不上传任何内容；余额由账户插件在本机获取。
+- **音频**：内置语音随包分发；你导入的音频只存在本机的 `~/.dsh/spend-trend-sounds/`，不会同步到任何地方。
+- **本机接口**：主机侧只监听 `127.0.0.1`，且只返回汇总数字（花费、档位、余额），不包含会话内容。
 
 ## 已知限制
 

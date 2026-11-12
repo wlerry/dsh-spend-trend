@@ -50,6 +50,12 @@ Remove it with `dsh plugin --profile <profile> remove @apecube/dsh-spend-trend`.
 
 ![Expanded panel](https://raw.githubusercontent.com/wlerry/dsh-spend-trend/main/assets/screenshots/02-panel.png)
 
+## Video
+
+![30-second demo](https://raw.githubusercontent.com/wlerry/dsh-spend-trend/main/assets/screenshots/03-video-poster.png)
+
+A 30-second walkthrough: it calls you when off-peak starts, and shows what is left before peak. (Bilibili link coming soon.)
+
 ## How to use it: the off-peak rhythm
 
 | Window | Do this | Why |
@@ -88,6 +94,26 @@ The two bundled voices may not suit everyone — no command line needed:
 3. It is selected automatically; hit **Preview** to confirm.
 
 Clips are stored in `$DSH_HOME/spend-trend-sounds/` (defaults to `~/.dsh/spend-trend-sounds/`); you can also copy files there by hand. The file name becomes the option label, a duplicate gets a `-2` suffix, the list re-scans whenever the panel opens, and deleting a file falls back to the default voice.
+
+## FAQ
+
+**No alarm sound?**
+Click anywhere in the page once — browsers suspend audio until the page has seen an interaction. Then check that **Enable** is on and the sound is not **Silent**. If the badge flashes and a notification appears but you hear nothing, the trigger worked and only the sound was blocked; it replays on your next click.
+
+**An imported clip does not play?**
+Make sure it is mp3 / m4a / wav / ogg and under 4 MB, then select it under **Sound** and hit **Preview**. Re-import a different file if it still fails — broken files are rejected instead of being stored silently.
+
+**Balance shows “—”?**
+The account call returned nothing, usually because you are signed out or the login expired. Sign in again under Settings → Account.
+
+**Numbers differ from the platform bill?**
+They are estimates priced at the tier of each call; platform bills can include discounts and granted-credit offsets. The higher your cache-hit rate, the more the peak/off-peak gap sits in the cache-hit rate (¥0.04 vs ¥0.02).
+
+**Nothing shows up on Windows?**
+Check that the plugin is **Enabled** on the Plugins page, then restart the app once — the client bundle only loads on a fresh page.
+
+**Will it wake me at night?**
+No. The voice only plays when off-peak starts, and phase switches only happen at 09:00, 12:00, 14:00 and 18:00 Beijing time; between 22:00 and 06:00 the voice is replaced by a tone.
 
 ## Billing model
 
@@ -164,7 +190,7 @@ A backgrounded page makes no extra requests and refreshes once when it becomes v
 | `icon.svg` | Plugin-list icon (vector) |
 | `assets/icon-180.png` | 180×180 raster tile for the plugin market card |
 | `assets/icon-source.png` | Original icon artwork (1254×1254, not shipped in the npm package) |
-| `assets/screenshots/*.png` | Market detail-page screenshots |
+| `assets/screenshots/*.png` | Market detail-page screenshots and the video poster |
 | `assets/sounds/*.m4a` | Phase-alarm voices (mature / cute / stop slacking) |
 | `screenshots.json` | Declares the screenshot order the market shows |
 
@@ -185,6 +211,33 @@ Layering:
 | `test/` | Unit tests for the pure functions, aggregation and alarm rules |
 
 CI runs syntax checks, the test suite and a manifest check on Ubuntu, Windows and macOS across Node 20/22/24.
+
+## Update and uninstall
+
+**Update**: the Plugins page offers a new version when one exists; or uninstall and install again.
+
+**Uninstall**:
+
+```sh
+dsh plugin --profile <profile> remove @apecube/dsh-spend-trend
+```
+
+On Desktop you can also remove it from the Plugins page.
+
+**Left behind after removal** (delete by hand if you like):
+
+| Location | Content |
+|---|---|
+| `~/.dsh/spend-trend-sounds/` | Your imported custom clips |
+| `~/.dsh/spend-trend-holidays.json` | Custom holiday calendar |
+| Browser localStorage | Alarm switch, chosen sound, heads-up setting |
+
+## Permissions and privacy
+
+- **Notifications**: requested once when you enable the alarm, used only for phase-switch notices; refusing still leaves sound-only mode working.
+- **Data**: reads token usage from local session logs only — no outbound network, nothing uploaded; the balance comes from the account plugin on this machine.
+- **Audio**: the bundled voices ship with the package; clips you import stay in `~/.dsh/spend-trend-sounds/` on this machine and are never synced anywhere.
+- **Local endpoints**: the host listens on `127.0.0.1` only and returns aggregate numbers (spend, phase, balance), never session content.
 
 ## Known limitations
 
