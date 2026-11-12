@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.3.2 — 2026-11-13
+
+- Removed the hint under the sound picker that printed the host's absolute clips directory, so the panel no longer leaks a local path.
+
 ## 1.3.1 — 2026-11-13
 
 - The switch alarm now also fires when a fresh poll shows the phase changed, not only when the one-second countdown reaches zero. This covers a poll landing exactly on the boundary before the tick, and a page that was asleep across the switch; a switch noticed more than ten minutes late is ignored instead of ringing mid-afternoon.

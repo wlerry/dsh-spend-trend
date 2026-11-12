@@ -79,7 +79,6 @@ window.__ModuleLoader__.load({
         soundChime: 'Chime',
         soundBell: 'Bell',
         soundNone: '静音',
-        customHint: '支持 mp3 / m4a / wav / ogg，也可以手动放进',
         alarmImport: '导入音频',
         alarmDelete: '删除',
         alarmImportFailed: '导入失败',
@@ -133,7 +132,6 @@ window.__ModuleLoader__.load({
         soundChime: 'Chime',
         soundBell: 'Bell',
         soundNone: 'Silent',
-        customHint: 'mp3 / m4a / wav / ogg supported; you can also drop files into',
         alarmImport: 'Import audio',
         alarmDelete: 'Delete',
         alarmImportFailed: 'Import failed',
@@ -761,8 +759,6 @@ window.__ModuleLoader__.load({
             text.alarmQuiet,
             denied ? ` · ${text.alarmDenied}` : (notificationState === 'default' ? ` · ${text.alarmPending}` : ''),
           ].join('')) : null,
-          h('div', { key: 'custom', style: { ...styles.note, wordBreak: 'break-all' } },
-            `${text.customHint} ${custom.dir === '' ? '~/.dsh/spend-trend-sounds' : custom.dir}`),
         ])
       }
 
