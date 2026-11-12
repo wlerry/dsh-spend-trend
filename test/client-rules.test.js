@@ -82,3 +82,17 @@ test('every preset is unique and both voices are bundled', () => {
   assert.deepEqual([...ids].slice(0, 3), ['voice-mature', 'voice-cute', 'voice-slack'])
   assert.equal(ids.includes('none'), true)
 })
+
+test('a fresh payload that flips the phase counts as one switch', () => {
+  const now = beijing(2026, 11, 11, 12, 0, 30)
+  assert.equal(rules.detectsSwitch(null, { kind: 'off', until: now + 7200000 }, now, true), false)
+  assert.equal(rules.detectsSwitch({ kind: 'peak', until: now }, { kind: 'off', until: now + 7200000 }, now, true), true)
+  assert.equal(rules.detectsSwitch({ kind: 'off', until: now }, { kind: 'off', until: now + 7200000 }, now, true), false)
+  assert.equal(rules.detectsSwitch({ kind: 'peak', until: now }, { kind: 'off', until: now + 7200000 }, now, false), false)
+})
+
+test('a switch noticed long after the boundary is not announced', () => {
+  const boundary = beijing(2026, 11, 11, 12, 0)
+  const late = boundary + 11 * 60 * 1000
+  assert.equal(rules.detectsSwitch({ kind: 'peak', until: boundary }, { kind: 'off', until: late + 7200000 }, late, true), false)
+})

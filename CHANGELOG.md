@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.3.1 — 2026-11-13
+
+- The switch alarm now also fires when a fresh poll shows the phase changed, not only when the one-second countdown reaches zero. This covers a poll landing exactly on the boundary before the tick, and a page that was asleep across the switch; a switch noticed more than ten minutes late is ignored instead of ringing mid-afternoon.
+- Two tests cover the payload-based detection (33 total).
+
 ## 1.3.0 — 2026-11-11
 
 - Added custom alarm sounds: an **Import audio** button opens the system file picker and copies the clip into `$DSH_HOME/spend-trend-sounds/`; files copied there by hand appear in the picker too, re-scanned whenever the panel opens.

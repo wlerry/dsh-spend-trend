@@ -23,6 +23,8 @@ window.__ModuleLoader__.load({
     const DATA_REFRESH_MS = 60_000
     const BALANCE_REFRESH_MS = 180_000
     const ADVANCE_MS = 2 * 60 * 1000
+    const SWITCH_DEDUPE_MS = 90_000
+    const STALE_SWITCH_MS = 10 * 60 * 1000
     const ALARM_KEY = 'dsh-spend-trend:alarm'
     const QUIET_START_HOUR = 22
     const QUIET_END_HOUR = 6
@@ -181,6 +183,19 @@ window.__ModuleLoader__.load({
       const isVoice = custom || entry?.kind === 'voice'
       if (isVoice && isQuietHours(time)) return 'ping'
       return preset
+    }
+
+    /**
+     * Whether a freshly polled phase means a switch we have not announced yet.
+     * @param previous - last payload's `{ kind, until }`, or null before the first payload.
+     * @param phase - the new payload's phase.
+     * @param now - current time in ms.
+     * @param enabled - whether the alarm is on.
+     */
+    function detectsSwitch(previous, phase, now, enabled) {
+      if (!enabled || previous === null || previous === undefined) return false
+      if (previous.kind === phase.kind) return false
+      return now - previous.until <= STALE_SWITCH_MS
     }
 
     function pickLocale(ctx) {
@@ -836,6 +851,8 @@ window.__ModuleLoader__.load({
         const loadedAt = React.useRef(0)
         const fired = React.useRef({ until: 0, advance: false, switched: false })
         const pendingSound = React.useRef(null)
+        const lastPhase = React.useRef(null)
+        const lastSwitchAt = React.useRef(0)
 
         const setAlarm = (next) => {
           setAlarmState(next)
@@ -931,6 +948,43 @@ window.__ModuleLoader__.load({
           load()
         }, [now, daily, load])
 
+        /**
+         * Sound, notification and flash for one switch. The guard drops a repeat
+         * when both the wall clock and a fresh poll notice the same boundary.
+         */
+        const fireSwitch = (nextPhase, at) => {
+          if (at - lastSwitchAt.current < SWITCH_DEDUPE_MS) return
+          lastSwitchAt.current = at
+          const sound = chooseSound(alarm.sound, nextPhase, at)
+          audio.unlock()
+          audio.play(sound)
+          // A page with no interaction since load keeps the context suspended:
+          // remember the sound and replay it on the next gesture.
+          setTimeout(() => {
+            if (sound !== null && audio.state() !== 'running') pendingSound.current = sound
+          }, 400)
+          notify(
+            nextPhase === 'off' ? text.notifyOffTitle : text.notifyPeakTitle,
+            nextPhase === 'off' ? text.notifyOffBody : text.notifyPeakBody,
+          )
+          setFlash(true)
+          setTimeout(() => setFlash(false), 4000)
+        }
+
+        // A phase change observed directly in a fresh payload. This covers the
+        // case where the poll lands on the boundary before the one-second tick,
+        // and a page that was asleep across the switch.
+        React.useEffect(() => {
+          const phase = daily?.phase
+          if (phase === undefined || typeof phase.until !== 'number') return
+          const previous = lastPhase.current
+          lastPhase.current = { kind: phase.kind, until: phase.until }
+          // Ignore a switch noticed long after the fact, e.g. a laptop that woke
+          // up hours later.
+          if (!detectsSwitch(previous, phase, Date.now(), alarm.enabled)) return
+          fireSwitch(phase.kind, Date.now())
+        }, [daily, alarm, text])
+
         // Switch alarm: fires once per phase boundary for the sound and once
         // for the optional heads-up.
         React.useEffect(() => {
@@ -951,20 +1005,7 @@ window.__ModuleLoader__.load({
           }
           if (!fired.current.switched && now >= phase.until) {
             fired.current.switched = true
-            const sound = chooseSound(alarm.sound, nextPhase, now)
-            audio.unlock()
-            audio.play(sound)
-            // A page with no interaction since load keeps the context suspended:
-            // remember the sound and replay it on the next gesture.
-            setTimeout(() => {
-              if (sound !== null && audio.state() !== 'running') pendingSound.current = sound
-            }, 400)
-            notify(
-              nextPhase === 'off' ? text.notifyOffTitle : text.notifyPeakTitle,
-              nextPhase === 'off' ? text.notifyOffBody : text.notifyPeakBody,
-            )
-            setFlash(true)
-            setTimeout(() => setFlash(false), 4000)
+            fireSwitch(nextPhase, now)
           }
         }, [now, daily, alarm, text])
 
@@ -1071,7 +1112,7 @@ window.__ModuleLoader__.load({
     return {
       inject: ['slots'],
       apply,
-      __test: { isQuietHours, chooseSound, SOUNDS, DEFAULT_ALARM },
+      __test: { isQuietHours, chooseSound, detectsSwitch, SOUNDS, DEFAULT_ALARM },
     }
   },
 })
