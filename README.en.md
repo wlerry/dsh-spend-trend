@@ -92,7 +92,7 @@ Clips are stored in `$DSH_HOME/spend-trend-sounds/` (defaults to `~/.dsh/spend-t
 ## FAQ
 
 **No alarm sound?**
-Click anywhere in the page once — browsers suspend audio until the page has seen an interaction. Then check that **Enable** is on and the sound is not **Silent**. If the badge flashes and a notification appears but you hear nothing, the trigger worked and only the sound was blocked; it replays on your next click.
+Desktop builds usually need no extra step; if you truly hear nothing, click anywhere in the page once (browsers suspend audio until the page has seen an interaction). Then check that **Enable** is on and the sound is not **Silent**. If the badge flashes and a notification appears but you hear nothing, the trigger worked and only the sound was blocked; it replays on your next click.
 
 **An imported clip does not play?**
 Make sure it is mp3 / m4a / wav / ogg and under 4 MB, then select it under **Sound** and hit **Preview**. Re-import a different file if it still fails — broken files are rejected instead of being stored silently.

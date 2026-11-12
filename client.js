@@ -61,7 +61,8 @@ window.__ModuleLoader__.load({
         alarmPreview: '试听',
         alarmAdvance: '提前 2 分钟',
         alarmQuiet: '22:00–06:00 不播语音',
-        alarmDenied: '通知未授权，只响铃',
+        alarmDenied: '通知被拒绝，只响铃；可在系统设置里允许',
+        alarmPending: '通知未开启，点一下面板授权',
         alarmPeak: '切到峰期',
         alarmOff: '切到谷期',
         notifyOffTitle: '已切换到谷期',
@@ -114,7 +115,8 @@ window.__ModuleLoader__.load({
         alarmPreview: 'Preview',
         alarmAdvance: '2-minute heads-up',
         alarmQuiet: 'No voice 22:00–06:00',
-        alarmDenied: 'Notifications denied, sound only',
+        alarmDenied: 'Notifications denied, sound only — allow them in system settings',
+        alarmPending: 'Notifications off — click the panel to grant',
         alarmPeak: 'Switch to peak',
         alarmOff: 'Switch to off-peak',
         notifyOffTitle: 'Off-peak started',
@@ -619,7 +621,10 @@ window.__ModuleLoader__.load({
 
     function notify(title, body) {
       try {
-        if (globalThis.Notification?.permission !== 'granted') return
+        if (globalThis.Notification?.permission !== 'granted') {
+          console.log('[spend-trend] notification skipped, permission =', globalThis.Notification?.permission)
+          return
+        }
         // eslint-disable-next-line no-new -- the notification is fire-and-forget
         new globalThis.Notification(title, { body, silent: true })
       } catch {
@@ -679,7 +684,7 @@ window.__ModuleLoader__.load({
         }, options.map((option) => h('option', { key: option.id, value: option.id }, option.label)))
       }
 
-      function AlarmSettings({ alarm, custom, onChange, onImport, onDelete, denied }) {
+      function AlarmSettings({ alarm, custom, onChange, onImport, onDelete, denied, notificationState }) {
         const enable = async (next) => {
           if (next) {
             audio.unlock()
@@ -754,7 +759,7 @@ window.__ModuleLoader__.load({
           ]) : null,
           alarm.enabled ? h('div', { key: 'note', style: styles.note }, [
             text.alarmQuiet,
-            denied ? ` · ${text.alarmDenied}` : '',
+            denied ? ` · ${text.alarmDenied}` : (notificationState === 'default' ? ` · ${text.alarmPending}` : ''),
           ].join('')) : null,
           h('div', { key: 'custom', style: { ...styles.note, wordBreak: 'break-all' } },
             `${text.customHint} ${custom.dir === '' ? '~/.dsh/spend-trend-sounds' : custom.dir}`),
@@ -772,7 +777,8 @@ window.__ModuleLoader__.load({
         const money = summarize(balance)
         const kind = phase.kind
         const prices = kind === 'peak' ? phase.peak ?? null : phase.offPeak ?? null
-        const denied = globalThis.Notification?.permission === 'denied'
+        const notificationState = globalThis.Notification?.permission ?? 'unavailable'
+        const denied = notificationState === 'denied'
 
         return h('div', {
           ref: panelRef,
@@ -830,7 +836,16 @@ window.__ModuleLoader__.load({
             h('span', { key: 'v', style: styles.footValue }, `${money.toppedUp} · ${text.bonus} ${money.bonus}`),
           ]),
           h('div', { key: 'hint', style: styles.hint }, text.schedule),
-          h(AlarmSettings, { key: 'alarm', alarm, custom, denied, onChange: setAlarm, onImport, onDelete }),
+          h(AlarmSettings, {
+            key: 'alarm',
+            alarm,
+            custom,
+            denied,
+            notificationState,
+            onChange: setAlarm,
+            onImport,
+            onDelete,
+          }),
           notice === '' ? null : h('div', { key: 'notice', style: styles.note }, notice),
         ])
       }
@@ -1020,6 +1035,18 @@ window.__ModuleLoader__.load({
           document.addEventListener('pointerdown', unlock, { once: true })
           return () => document.removeEventListener('pointerdown', unlock)
         }, [alarm.enabled])
+
+        // Permission granted only while the alarm switch was flipped. A setting
+        // restored from localStorage never asked, so ask when the panel opens.
+        React.useEffect(() => {
+          if (!open || !alarm.enabled) return
+          if (globalThis.Notification?.permission !== 'default') return
+          try {
+            globalThis.Notification.requestPermission?.()
+          } catch {
+            /* a refused prompt leaves sound-only mode */
+          }
+        }, [open, alarm.enabled])
 
         React.useEffect(() => {
           if (!open) return undefined

@@ -3,6 +3,7 @@
 ## 1.3.1 — 2026-11-13
 
 - The switch alarm now also fires when a fresh poll shows the phase changed, not only when the one-second countdown reaches zero. This covers a poll landing exactly on the boundary before the tick, and a page that was asleep across the switch; a switch noticed more than ten minutes late is ignored instead of ringing mid-afternoon.
+- The panel now asks for notification permission whenever it opens with the alarm already on (previously only the enable switch asked), and reports when notifications are off instead of silently skipping.
 - Two tests cover the payload-based detection (33 total).
 
 ## 1.3.0 — 2026-11-11
