@@ -22,29 +22,21 @@
 
 ## Install
 
-**DSH Desktop (Windows / macOS / Linux)**: open **Plugins → Add plugin**, enter
+**In DSH Desktop**: open **Plugins → Add plugin**, enter
 
 ```
 @apecube/dsh-spend-trend
 ```
 
-then **Install**, **Enable now**, and refresh the page. This is also the path on Windows.
+then **Install**, **Enable now**, and refresh the page. The same path works on Windows.
 
-**A profile you start yourself with `dsh web`** (not the Desktop app's `desktop` profile):
+You can also just tell DSH:
 
-```sh
-dsh plugin --profile <profile> add @apecube/dsh-spend-trend
-```
+> Install the @apecube/dsh-spend-trend plugin for me.
 
-Straight from GitHub:
+It installs and enables the plugin itself.
 
-```sh
-dsh plugin --profile <profile> add github:wlerry/dsh-spend-trend
-```
-
-> The Desktop app owns its profile, so the CLI refuses it on every platform; use the Plugins page there instead.
-
-Remove it from the Plugins page, or with `dsh plugin --profile <profile> remove @apecube/dsh-spend-trend`.
+To remove it, use the **Plugins** page.
 
 ## Screenshots
 
@@ -218,13 +210,7 @@ CI runs syntax checks, the test suite and a manifest check on Ubuntu, Windows an
 
 **Update**: the Plugins page offers a new version when one exists; or uninstall and install again.
 
-**Uninstall**:
-
-```sh
-dsh plugin --profile <profile> remove @apecube/dsh-spend-trend
-```
-
-On Desktop you can also remove it from the Plugins page.
+**Uninstall**: remove it from the **Plugins** page.
 
 **Left behind after removal** (delete by hand if you like):
 
