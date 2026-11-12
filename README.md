@@ -22,15 +22,15 @@
 
 ## 安装
 
-**DSH 桌面端**：左侧 **插件 → Add plugin**，输入包名
+**DSH 桌面端（Windows / macOS / Linux）**：左侧 **插件 → Add plugin**，输入包名
 
 ```
 @apecube/dsh-spend-trend
 ```
 
-点 **Install**，装完 **Enable now** 并刷新页面即可。
+点 **Install**，装完 **Enable now** 并刷新页面即可。Windows 上也是这一条路。
 
-**普通 `dsh web` profile**：
+**自己用 `dsh web` 启动的 profile**（不是桌面版的 `desktop` profile）：
 
 ```sh
 dsh plugin --profile <profile> add @apecube/dsh-spend-trend
@@ -42,7 +42,9 @@ dsh plugin --profile <profile> add @apecube/dsh-spend-trend
 dsh plugin --profile <profile> add github:wlerry/dsh-spend-trend
 ```
 
-卸载：`dsh plugin --profile <profile> remove @apecube/dsh-spend-trend`
+> 桌面版的 profile 由应用托管，命令行会被拒绝（任何系统都一样）；这种情况用上面的插件页安装。
+
+卸载：桌面端在插件页移除；命令行 profile 用 `dsh plugin --profile <profile> remove @apecube/dsh-spend-trend`。
 
 ## 截图
 

@@ -22,15 +22,15 @@
 
 ## Install
 
-**DSH Desktop**: open **Plugins → Add plugin**, enter
+**DSH Desktop (Windows / macOS / Linux)**: open **Plugins → Add plugin**, enter
 
 ```
 @apecube/dsh-spend-trend
 ```
 
-then **Install**, **Enable now**, and refresh the page.
+then **Install**, **Enable now**, and refresh the page. This is also the path on Windows.
 
-**Plain `dsh web` profile**:
+**A profile you start yourself with `dsh web`** (not the Desktop app's `desktop` profile):
 
 ```sh
 dsh plugin --profile <profile> add @apecube/dsh-spend-trend
@@ -42,7 +42,9 @@ Straight from GitHub:
 dsh plugin --profile <profile> add github:wlerry/dsh-spend-trend
 ```
 
-Remove it with `dsh plugin --profile <profile> remove @apecube/dsh-spend-trend`.
+> The Desktop app owns its profile, so the CLI refuses it on every platform; use the Plugins page there instead.
+
+Remove it from the Plugins page, or with `dsh plugin --profile <profile> remove @apecube/dsh-spend-trend`.
 
 ## Screenshots
 
