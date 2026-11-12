@@ -6,6 +6,7 @@
 - Imported clips can be removed again from the panel, which falls back to the default voice.
 - The host lists, serves and deletes those clips through three routes, rejecting hidden files, path traversal, unknown extensions and files over 4 MB.
 - Fixed the custom-clip route registering with a trailing slash, which the host's prefix matcher never matched — newly imported clips could not play.
+- The switch alarm now resumes the audio context before playing and replays a blocked sound on the next click, so a page that sat untouched since load no longer misses the alarm silently.
 - Fourteen new tests cover the directory rules, the routes and the custom-preset behaviour (31 total).
 
 ## 1.2.0 — 2026-11-11

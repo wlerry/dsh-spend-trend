@@ -575,8 +575,16 @@ window.__ModuleLoader__.load({
         source.start(0)
       }
 
+      /** Current context state, or `unavailable` when the platform has no Web Audio. */
+      function state() {
+        const audio = audioContext()
+        return audio === null ? 'unavailable' : audio.state
+      }
+
       function play(soundId) {
         if (soundId === null || soundId === undefined) return
+        const audio = audioContext()
+        if (audio !== null && audio.state === 'suspended') audio.resume().catch(() => {})
         if (soundId.startsWith('custom:')) {
           const name = soundId.slice('custom:'.length)
           voice(`${CUSTOM_SOUND_BASE}${encodeURIComponent(name)}`, soundId).catch(() => {})
@@ -591,7 +599,7 @@ window.__ModuleLoader__.load({
         tone(entry.id)
       }
 
-      return { unlock, play }
+      return { unlock, play, state }
     }
 
     function notify(title, body) {
@@ -827,6 +835,7 @@ window.__ModuleLoader__.load({
         const panelRef = React.useRef(null)
         const loadedAt = React.useRef(0)
         const fired = React.useRef({ until: 0, advance: false, switched: false })
+        const pendingSound = React.useRef(null)
 
         const setAlarm = (next) => {
           setAlarmState(next)
@@ -942,7 +951,14 @@ window.__ModuleLoader__.load({
           }
           if (!fired.current.switched && now >= phase.until) {
             fired.current.switched = true
-            audio.play(chooseSound(alarm.sound, nextPhase, now))
+            const sound = chooseSound(alarm.sound, nextPhase, now)
+            audio.unlock()
+            audio.play(sound)
+            // A page with no interaction since load keeps the context suspended:
+            // remember the sound and replay it on the next gesture.
+            setTimeout(() => {
+              if (sound !== null && audio.state() !== 'running') pendingSound.current = sound
+            }, 400)
             notify(
               nextPhase === 'off' ? text.notifyOffTitle : text.notifyPeakTitle,
               nextPhase === 'off' ? text.notifyOffBody : text.notifyPeakBody,
@@ -954,7 +970,12 @@ window.__ModuleLoader__.load({
 
         React.useEffect(() => {
           if (!alarm.enabled) return undefined
-          const unlock = () => audio.unlock()
+          const unlock = () => {
+            audio.unlock()
+            const pending = pendingSound.current
+            pendingSound.current = null
+            if (pending !== null) audio.play(pending)
+          }
           document.addEventListener('pointerdown', unlock, { once: true })
           return () => document.removeEventListener('pointerdown', unlock)
         }, [alarm.enabled])
