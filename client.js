@@ -77,6 +77,7 @@ window.__ModuleLoader__.load({
         guardStop: '暂停执行',
         guardNote: '余额到达预设值暂停所有工作',
         guardVoice: '语音播报',
+        guardVoiceFailed: '语音播放失败，请把这段错误发我',
         guardBarWarn: (total, threshold) => `余额 ${total} 已低于 ${threshold}，请注意充值`,
         guardBarStop: (total, threshold) => `余额 ${total} 已低于 ${threshold}，已暂停执行`,
         topup: '充值',
@@ -146,6 +147,7 @@ window.__ModuleLoader__.load({
         guardStop: 'Pause work',
         guardNote: 'Pauses all work when the balance reaches the threshold.',
         guardVoice: 'Voice alert',
+        guardVoiceFailed: 'The clip failed to play — please share this error',
         guardBarWarn: (total, threshold) => `Balance ${total} is below ${threshold} — consider topping up`,
         guardBarStop: (total, threshold) => `Balance ${total} is below ${threshold} — work is paused`,
         topup: 'Top up',
@@ -793,6 +795,7 @@ window.__ModuleLoader__.load({
     /** Web Audio engine: synthesised tones plus the bundled voice clips. */
     function createAudio() {
       let context = null
+      let lastAudioError = null
       const buffers = new Map()
 
       function audioContext() {
@@ -846,19 +849,29 @@ window.__ModuleLoader__.load({
 
       async function voice(url, key) {
         const audio = audioContext()
-        if (audio === null) return
-        let buffer = buffers.get(key)
-        if (buffer === undefined) {
-          const response = await fetch(url)
-          if (!response.ok) return
-          const bytes = await response.arrayBuffer()
-          buffer = await audio.decodeAudioData(bytes)
-          buffers.set(key, buffer)
+        if (audio === null) return false
+        try {
+          let buffer = buffers.get(key)
+          if (buffer === undefined) {
+            const response = await fetch(url)
+            if (!response.ok) throw new Error(`HTTP ${response.status}`)
+            const bytes = await response.arrayBuffer()
+            buffer = await audio.decodeAudioData(bytes)
+            buffers.set(key, buffer)
+          }
+          const source = audio.createBufferSource()
+          source.buffer = buffer
+          source.connect(audio.destination)
+          source.start(0)
+          return true
+        } catch (error) {
+          // A missing or undecodable clip must not silence the reminder: fall
+          // back to a tone and remember why, so the panel can say it.
+          lastAudioError = `${key}: ${String(error?.message ?? error)}`
+          console.warn('[spend-trend] clip failed, falling back to a tone:', lastAudioError)
+          tone('ping')
+          return false
         }
-        const source = audio.createBufferSource()
-        source.buffer = buffer
-        source.connect(audio.destination)
-        source.start(0)
       }
 
       /** Current context state, or `unavailable` when the platform has no Web Audio. */
@@ -885,7 +898,7 @@ window.__ModuleLoader__.load({
         tone(entry.id)
       }
 
-      return { unlock, play, state }
+      return { unlock, play, state, voice }
     }
 
     function notify(title, body) {
@@ -1452,16 +1465,20 @@ window.__ModuleLoader__.load({
         }, [now, daily, alarm, text])
 
         React.useEffect(() => {
-          if (!alarm.enabled) return undefined
+          if (!alarm.enabled && guard.enabled !== true) return undefined
           const unlock = () => {
             audio.unlock()
             const pending = pendingSound.current
             pendingSound.current = null
             if (pending !== null) audio.play(pending)
+            if (pendingGuardVoice.current) {
+              pendingGuardVoice.current = false
+              audio.voice(`${SOUND_BASE}${BALANCE_WARNING_SOUND}`, BALANCE_WARNING_SOUND)
+            }
           }
           document.addEventListener('pointerdown', unlock, { once: true })
           return () => document.removeEventListener('pointerdown', unlock)
-        }, [alarm.enabled])
+        }, [alarm.enabled, guard.enabled])
 
         // Permission granted only while the alarm switch was flipped. A setting
         // restored from localStorage never asked, so ask when the panel opens.
@@ -1518,32 +1535,51 @@ window.__ModuleLoader__.load({
 
         // Keep the host guard in sync with the latest balance and announce the
         // single moment the balance drops below the threshold.
-        const lastGuardTotal = React.useRef(null)
+        const lastGuardBelow = React.useRef(null)
+        const pendingGuardVoice = React.useRef(false)
         React.useEffect(() => {
-          const total = Number.isFinite(money?.total) ? money.total : undefined
-          reportGuard(guard, total)
-          if (total === undefined) return
-          const previous = lastGuardTotal.current
-          lastGuardTotal.current = total
-          if (!guard.enabled || guard.threshold <= 0) return
-          if (previous === null || previous < guard.threshold || total >= guard.threshold) return
-          notify(
-            text.guardNotifyTitle,
-            guard.action === 'stop'
-              ? text.guardNotifyStop(money.text, `¥${guard.threshold}`)
-              : text.guardNotifyBody(money.text, `¥${guard.threshold}`),
-          )
-          // The warning voice is part of the feature, not a selectable preset.
-          if (guard.voice !== false) {
-            audio.unlock()
-            if (isQuietHours(now)) {
-              audio.play('ping')
-            } else {
-              audio.voice(`${SOUND_BASE}${BALANCE_WARNING_SOUND}`, BALANCE_WARNING_SOUND)
+          try {
+            const total = Number.isFinite(money?.total) ? money.total : undefined
+            reportGuard(guard, total)
+            if (total === undefined) return
+            if (!guard.enabled || guard.threshold <= 0) {
+              lastGuardBelow.current = null
+              return
             }
+            // Watch the state, not only the moment it flips: raising the
+            // threshold above the current balance must warn immediately.
+            const below = total < guard.threshold
+            const wasBelow = lastGuardBelow.current
+            lastGuardBelow.current = below
+            if (wasBelow === null || wasBelow || !below) return
+            notify(
+              text.guardNotifyTitle,
+              guard.action === 'stop'
+                ? text.guardNotifyStop(money.text, `¥${guard.threshold}`)
+                : text.guardNotifyBody(money.text, `¥${guard.threshold}`),
+            )
+            // The warning voice is part of the feature, not a selectable preset.
+            if (guard.voice !== false) {
+              audio.unlock()
+              if (isQuietHours(now)) {
+                audio.play('ping')
+                setTimeout(() => {
+                  if (audio.state() !== 'running') pendingGuardVoice.current = true
+                }, 400)
+              } else {
+                audio.voice(`${SOUND_BASE}${BALANCE_WARNING_SOUND}`, BALANCE_WARNING_SOUND)
+                // A page opened after the last click cannot start audio; replay the
+                // warning on the next gesture instead of losing it.
+                setTimeout(() => {
+                  if (audio.state() !== 'running') pendingGuardVoice.current = true
+                }, 400)
+              }
+            }
+            setFlash(true)
+            setTimeout(() => setFlash(false), 4000)
+          } catch (error) {
+            console.warn('[spend-trend] guard reminder failed:', String(error?.message ?? error))
           }
-          setFlash(true)
-          setTimeout(() => setFlash(false), 4000)
         }, [money?.total, guard, text])
 
         const kind = phase.kind
