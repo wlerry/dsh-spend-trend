@@ -66,7 +66,7 @@ window.__ModuleLoader__.load({
         alarmQuiet: '22:00–06:00 不播语音',
         alarmDenied: '通知被拒绝，只响铃；可在系统设置里允许',
         alarmPending: '通知未开启，点一下面板授权',
-        guardTitle: '余额兜底',
+        guardTitle: '余额保护',
         guardSwitch: '开启',
         guardThreshold: '余额阈值（¥）',
         guardAction: '触发时',
