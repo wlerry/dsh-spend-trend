@@ -91,6 +91,8 @@ The panel's **Balance guard** section has three settings:
 | Threshold | Default **¥5**; triggers below this |
 | When triggered | **Warn only** (default) or **Pause work** |
 
+A **Top up** button sits next to the balance and opens the official recharge page.
+
 **Warn only**: the badge turns amber, a banner appears at the top of the panel, and one system notification fires at the moment the balance crosses the line.
 
 **Pause work**: besides the warning, every tool call is refused while the balance is below the threshold (`ask_user_question` stays available), so the agent cannot make progress and the session stops. The tool result names the balance, the threshold and how to resume, so the model stops and asks instead of retrying.

@@ -3,6 +3,7 @@
 ## 1.4.0 — 2026-11-13
 
 - Added the **balance guard**: a threshold (default ¥5) that turns the badge amber and notifies once when the balance crosses it, and can optionally pause work by refusing tool calls (asking stays allowed) until the balance recovers.
+- The balance row now carries a **Top up** link that opens the official recharge page.
 - The host keeps the last reported balance behind a new `guard` route and evaluates it in a `tools/execute` hook; the guard fails open when no fresh report arrives for ten minutes, and the page re-reports every minute even when the value is unchanged. Ten new tests cover the thresholds, the crossing detection, staleness and the route (41 total).
 
 ## 1.3.3 — 2026-11-13

@@ -28,6 +28,7 @@ window.__ModuleLoader__.load({
     const ALARM_KEY = 'dsh-spend-trend:alarm'
     const GUARD_KEY = 'dsh-spend-trend:guard'
     const GUARD_ROUTE = '/plugin/dsh-spend-trend/guard'
+    const TOPUP_URL = 'https://platform.deepseek.com/top_up'
     const DEFAULT_GUARD = { enabled: false, threshold: 5, action: 'warn' }
     const QUIET_START_HOUR = 22
     const QUIET_END_HOUR = 6
@@ -76,6 +77,7 @@ window.__ModuleLoader__.load({
         guardBarWarn: (total, threshold) => `余额 ${total} 已低于 ${threshold}，请注意充值`,
         guardBarStop: (total, threshold) => `余额 ${total} 已低于 ${threshold}，已暂停执行`,
         guardRecover: '重新检查',
+        topup: '充值',
         guardNotifyTitle: '余额不足',
         guardNotifyBody: (total, threshold) => `余额 ${total} 低于 ${threshold}，请注意充值`, 
         guardNotifyStop: (total, threshold) => `余额 ${total} 低于 ${threshold}，已暂停执行`, 
@@ -142,6 +144,7 @@ window.__ModuleLoader__.load({
         guardBarWarn: (total, threshold) => `Balance ${total} is below ${threshold} — consider topping up`,
         guardBarStop: (total, threshold) => `Balance ${total} is below ${threshold} — work is paused`,
         guardRecover: 'Recheck',
+        topup: 'Top up',
         guardNotifyTitle: 'Low balance',
         guardNotifyBody: (total, threshold) => `Balance ${total} is below ${threshold} — consider topping up`,
         guardNotifyStop: (total, threshold) => `Balance ${total} is below ${threshold} — work is paused`,
@@ -988,9 +991,19 @@ window.__ModuleLoader__.load({
           ]),
           h('div', { key: 'foot', style: { ...styles.footRow, marginTop: 2 } }, [
             h('span', { key: 'l', style: styles.footLabel }, text.balance),
-            h('span', { key: 'v', style: styles.footValue }, money === null
-              ? (balance?.status === 'unavailable' ? text.balanceNone : text.loading)
-              : money.text),
+            h('span', { key: 'v', style: { ...styles.footValue, display: 'inline-flex', alignItems: 'center', gap: 6 } }, [
+              money === null
+                ? (balance?.status === 'unavailable' ? text.balanceNone : text.loading)
+                : money.text,
+              h('a', {
+                key: 'topup',
+                href: TOPUP_URL,
+                target: '_blank',
+                rel: 'noopener noreferrer',
+                style: { ...styles.smallButton, textDecoration: 'none' },
+                title: text.topup,
+              }, text.topup),
+            ]),
           ]),
           money === null ? null : h('div', {
             key: 'detail',
