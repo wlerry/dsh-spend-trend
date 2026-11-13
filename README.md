@@ -210,7 +210,7 @@ macOS、Windows、Linux 都能用：插件是纯 JavaScript，主机侧只用到
 | `assets/icon-180.png` | 插件市场卡片用的 180×180 位图 |
 | `assets/icon-source.png` | 图标设计原稿（1254×1254，不进 npm 包） |
 | `assets/screenshots/*.png` | 市场详情页截图 + 视频海报 |
-| `assets/sounds/*.m4a` | 峰谷提醒语音（御姐音 / 萝莉音 / 别摸鱼了） |
+| `assets/sounds/*.m4a` | 提醒语音（御姐音 / 萝莉音 / 别摸鱼了 / 余额预警） |
 | `screenshots.json` | 声明市场展示的截图顺序（市场从仓库读取） |
 
 ## 开发

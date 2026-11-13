@@ -209,7 +209,7 @@ A backgrounded page makes no extra requests and refreshes once when it becomes v
 | `assets/icon-180.png` | 180×180 raster tile for the plugin market card |
 | `assets/icon-source.png` | Original icon artwork (1254×1254, not shipped in the npm package) |
 | `assets/screenshots/*.png` | Market detail-page screenshots and the video poster |
-| `assets/sounds/*.m4a` | Phase-alarm voices (mature / cute / stop slacking) |
+| `assets/sounds/*.m4a` | Alarm voices (mature / cute / stop slacking / balance warning) |
 | `screenshots.json` | Declares the screenshot order the market shows |
 
 ## Development
