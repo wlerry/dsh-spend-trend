@@ -1,7 +1,15 @@
 <p align="center">
+  <a href="https://www.bilibili.com/video/BV1vYWa6VE6X">▶ Watch the 30-second demo</a>
+</p>
+
+<p align="center">
   <a href="https://www.bilibili.com/video/BV1vYWa6VE6X">
     <img src="https://raw.githubusercontent.com/wlerry/dsh-spend-trend/main/assets/screenshots/03-video-poster.png" width="100%" alt="30-second demo">
   </a>
+</p>
+
+<p align="center">
+  <a href="https://www.bilibili.com/video/BV1vYWa6VE6X">Watch the video for details →</a>
 </p>
 
 <h1 align="center">Spend peak/off-peak chart · dsh-spend-trend</h1>

@@ -1,7 +1,15 @@
 <p align="center">
+  <a href="https://www.bilibili.com/video/BV1vYWa6VE6X">▶ 30 秒视频了解详细</a>
+</p>
+
+<p align="center">
   <a href="https://www.bilibili.com/video/BV1vYWa6VE6X">
     <img src="https://raw.githubusercontent.com/wlerry/dsh-spend-trend/main/assets/screenshots/03-video-poster.png" width="100%" alt="消耗峰谷图 30 秒演示">
   </a>
+</p>
+
+<p align="center">
+  <a href="https://www.bilibili.com/video/BV1vYWa6VE6X">视频了解详细 →</a>
 </p>
 
 <h1 align="center">消耗峰谷图 · dsh-spend-trend</h1>
