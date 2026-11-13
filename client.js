@@ -17,11 +17,12 @@ window.__ModuleLoader__.load({
     const ROUTE = '/plugin/dsh-spend-trend/daily'
     const SOUND_BASE = '/plugin/dsh-spend-trend/sound/'
     const CUSTOM_SOUND_BASE = '/plugin/dsh-spend-trend/sound/custom/'
+    const BALANCE_WARNING_SOUND = 'balance-warning.m4a'
     const SOUND_LIST_ROUTE = '/plugin/dsh-spend-trend/sounds'
     const SOUND_IMPORT_ROUTE = '/plugin/dsh-spend-trend/sounds/import'
     const DAY_MS = 24 * 60 * 60 * 1000
     const DATA_REFRESH_MS = 60_000
-    const BALANCE_REFRESH_MS = 180_000
+    const BALANCE_REFRESH_MS = 60_000
     const ADVANCE_MS = 2 * 60 * 1000
     const SWITCH_DEDUPE_MS = 90_000
     const STALE_SWITCH_MS = 10 * 60 * 1000
@@ -73,11 +74,12 @@ window.__ModuleLoader__.load({
         guardAction: '触发时',
         guardWarn: '只提醒',
         guardStop: '暂停执行',
-        guardNote: '余额低于阈值时停掉工具调用，防止忘记关会话把余额烧完；充值后点「重新检查」恢复。',
+        guardNote: '余额到达预设值暂停所有工作',
         guardBarWarn: (total, threshold) => `余额 ${total} 已低于 ${threshold}，请注意充值`,
         guardBarStop: (total, threshold) => `余额 ${total} 已低于 ${threshold}，已暂停执行`,
-        guardRecover: '重新检查',
         topup: '充值',
+        topupBack: '返回 DeepSeek Harness',
+        topupFailed: (reason) => `充值页没在应用内打开：${reason}`,
         guardNotifyTitle: '余额不足',
         guardNotifyBody: (total, threshold) => `余额 ${total} 低于 ${threshold}，请注意充值`, 
         guardNotifyStop: (total, threshold) => `余额 ${total} 低于 ${threshold}，已暂停执行`, 
@@ -140,11 +142,12 @@ window.__ModuleLoader__.load({
         guardAction: 'When triggered',
         guardWarn: 'Warn only',
         guardStop: 'Pause work',
-        guardNote: 'Stops tool calls once the balance drops below the threshold, so a forgotten session cannot drain the account. Click “Recheck” after topping up.',
+        guardNote: 'Pauses all work when the balance reaches the threshold.',
         guardBarWarn: (total, threshold) => `Balance ${total} is below ${threshold} — consider topping up`,
         guardBarStop: (total, threshold) => `Balance ${total} is below ${threshold} — work is paused`,
-        guardRecover: 'Recheck',
         topup: 'Top up',
+        topupBack: 'Back to DeepSeek Harness',
+        topupFailed: (reason) => `The top-up page did not open in the app: ${reason}`,
         guardNotifyTitle: 'Low balance',
         guardNotifyBody: (total, threshold) => `Balance ${total} is below ${threshold} — consider topping up`,
         guardNotifyStop: (total, threshold) => `Balance ${total} is below ${threshold} — work is paused`,
@@ -349,6 +352,90 @@ window.__ModuleLoader__.load({
       } catch {
         /* the host keeps the previous value */
       }
+    }
+
+    /**
+     * Open the Platform top-up page inside the desktop shell, reusing the same
+     * bridge the account settings use. Returns false when no bridge exists, so
+     * the caller lets the plain link open instead.
+     */
+    function openPlatformTopUp(labels, onFailure) {
+      const platform = globalThis.dshPlatform
+      if (platform?.open === undefined) {
+        const where = `${globalThis.location?.protocol}//${globalThis.location?.hostname}`
+        console.info('[spend-trend] no desktop bridge; dshPlatform =', typeof globalThis.dshPlatform, 'at', where)
+        return { ok: false, reason: `dshPlatform ${typeof globalThis.dshPlatform} @ ${where}` }
+      }
+      if (document.getElementById('dsh-spend-trend-topup') !== null) return true
+
+      const overlay = document.createElement('div')
+      overlay.id = 'dsh-spend-trend-topup'
+      overlay.setAttribute('role', 'dialog')
+      overlay.setAttribute('aria-modal', 'true')
+      overlay.style.cssText = [
+        'position:fixed', 'inset:0', 'z-index:2147483000', 'display:flex',
+        'flex-direction:column', 'background:var(--dsw-alias-bg-layer-1,#111)',
+      ].join(';')
+
+      const mac = document.documentElement.dataset.platform === 'darwin' ||
+        /Mac/.test(globalThis.navigator?.userAgent ?? '')
+      const header = document.createElement('div')
+      header.style.cssText = [
+        'display:flex', 'align-items:center', 'height:44px', 'flex:none',
+        `padding:0 12px 0 ${mac ? 84 : 12}px`,
+        'border-bottom:0.5px solid var(--dsw-alias-border-l2)',
+        'color:var(--dsw-alias-label-primary)', 'font-size:13px',
+        '-webkit-app-region:drag',
+      ].join(';')
+
+      const back = document.createElement('button')
+      back.type = 'button'
+      back.style.cssText = [
+        'font:inherit', 'font-size:13px', 'cursor:pointer', 'line-height:1',
+        'display:inline-flex', 'align-items:center', 'gap:4px',
+        'padding:4px 8px', 'border-radius:6px',
+        'color:var(--dsw-alias-label-primary)',
+        'background:transparent', 'border:0',
+        '-webkit-app-region:no-drag',
+      ].join(';')
+      const chevron = document.createElement('span')
+      chevron.textContent = '\u2039'
+      chevron.style.cssText = 'font-size:18px;line-height:1;opacity:.75'
+      const label = document.createElement('span')
+      label.textContent = labels.back
+      back.append(chevron, label)
+
+      const view = document.createElement('div')
+      view.style.cssText = 'flex:1;min-height:0;'
+      header.append(back)
+      overlay.append(header, view)
+      document.body.appendChild(overlay)
+
+      const bounds = () => {
+        const rect = view.getBoundingClientRect()
+        return { x: rect.x, y: rect.y, width: rect.width, height: rect.height }
+      }
+      let closed = false
+      let failure = ''
+      const close = () => {
+        if (closed) return
+        closed = true
+        window.removeEventListener('resize', onResize)
+        platform.close?.().catch?.(() => {})
+        overlay.remove()
+        labels.onClosed?.()
+      }
+      const onResize = () => platform.setBounds?.(bounds())?.catch?.(() => {})
+      back.addEventListener('click', close)
+      window.addEventListener('resize', onResize)
+
+      platform.open('top-up', bounds()).catch((error) => {
+        failure = String(error?.message ?? error)
+
+        close()
+        onFailure?.(failure)
+      })
+      return { ok: true, get failure() { return failure } }
     }
 
     function utcOffsetMinutes() {
@@ -899,7 +986,9 @@ window.__ModuleLoader__.load({
               ]),
             ])
             : null,
-          guard.enabled ? h('div', { key: 'n', style: styles.note }, text.guardNote) : null,
+          guard.enabled && guard.action === 'stop'
+            ? h('div', { key: 'n', style: styles.note }, text.guardNote)
+            : null,
         ])
       }
 
@@ -914,7 +1003,7 @@ window.__ModuleLoader__.load({
         guard,
         setGuard,
         guardWarn,
-        onRecheck,
+        onTopUpFailed,
         onImport,
         onDelete,
         position,
@@ -961,17 +1050,10 @@ window.__ModuleLoader__.load({
             }, '×'),
           ]),
           guardWarn
-            ? h('div', { key: 'guardbar', style: styles.guardBar, role: 'alert' }, [
-              h('span', { key: 't' }, guard.action === 'stop'
+            ? h('div', { key: 'guardbar', style: styles.guardBar, role: 'alert' },
+              guard.action === 'stop'
                 ? text.guardBarStop(money.text, `¥${guard.threshold}`)
-                : text.guardBarWarn(money.text, `¥${guard.threshold}`)),
-              h('button', {
-                key: 'r',
-                type: 'button',
-                style: styles.smallButton,
-                onClick: onRecheck,
-              }, text.guardRecover),
-            ])
+                : text.guardBarWarn(money.text, `¥${guard.threshold}`))
             : null,
           h('div', { key: 'rate', style: styles.meta },
             prices === null
@@ -1002,6 +1084,16 @@ window.__ModuleLoader__.load({
                 rel: 'noopener noreferrer',
                 style: { ...styles.smallButton, textDecoration: 'none' },
                 title: text.topup,
+                onClick: (event) => {
+                  event.preventDefault()
+                  const report = (reason) => onTopUpFailed?.(text.topupFailed(reason))
+                  const result = openPlatformTopUp({ back: text.topupBack, onClosed: recheck }, report)
+                  if (!result.ok) {
+                    // No desktop bridge (the web build): fall back to the site.
+                    globalThis.open?.(TOPUP_URL, '_blank', 'noopener,noreferrer')
+                    report(result.reason)
+                  }
+                },
               }, text.topup),
             ]),
           ]),
@@ -1047,6 +1139,7 @@ window.__ModuleLoader__.load({
         const pendingSound = React.useRef(null)
         const lastPhase = React.useRef(null)
         const lastSwitchAt = React.useRef(0)
+        const refreshBalance = React.useRef(null)
 
         const setAlarm = (next) => {
           setAlarmState(next)
@@ -1125,11 +1218,23 @@ window.__ModuleLoader__.load({
             const value = await readBalance(ctx, locale)
             if (!cancelled) setBalance(value)
           }
+          refreshBalance.current = run
           run()
           const timer = setInterval(run, BALANCE_REFRESH_MS)
+          // Coming back from the top-up page (a focus change) usually means the
+          // balance moved, so re-read it without waiting for the next tick.
+          const onFocus = () => { run() }
+          const onVisible = () => {
+            if (document.visibilityState === 'visible') run()
+          }
+          window.addEventListener?.('focus', onFocus)
+          document.addEventListener?.('visibilitychange', onVisible)
           return () => {
             cancelled = true
             clearInterval(timer)
+            window.removeEventListener?.('focus', onFocus)
+            document.removeEventListener?.('visibilitychange', onVisible)
+            refreshBalance.current = null
           }
         }, [])
 
@@ -1285,6 +1390,13 @@ window.__ModuleLoader__.load({
               ? text.guardNotifyStop(money.text, `¥${guard.threshold}`)
               : text.guardNotifyBody(money.text, `¥${guard.threshold}`),
           )
+          // The warning voice is part of the feature, not a selectable preset.
+          audio.unlock()
+          if (isQuietHours(now)) {
+            audio.play('ping')
+          } else {
+            audio.voice(`${SOUND_BASE}${BALANCE_WARNING_SOUND}`, BALANCE_WARNING_SOUND)
+          }
           setFlash(true)
           setTimeout(() => setFlash(false), 4000)
         }, [money?.total, guard, text])
@@ -1294,7 +1406,7 @@ window.__ModuleLoader__.load({
         const title = `${text[kind]} · ${text.balance} ${money === null ? '—' : money.text}`
 
         const recheck = () => {
-          readBalance(ctx, locale).then((value) => setBalance(value)).catch(() => {})
+          refreshBalance.current?.()
         }
 
         const toggle = () => {
@@ -1309,6 +1421,7 @@ window.__ModuleLoader__.load({
           }
           audio.unlock()
           readCustomSounds().then(setCustom).catch(() => {})
+          recheck()
           setOpen(true)
           setNow(Date.now())
         }
@@ -1357,7 +1470,7 @@ window.__ModuleLoader__.load({
               guard,
               setGuard,
               guardWarn,
-              onRecheck: recheck,
+              onTopUpFailed: (reason) => setNotice(reason),
               onImport: importClip,
               onDelete: deleteClip,
               position,

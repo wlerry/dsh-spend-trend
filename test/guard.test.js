@@ -81,3 +81,16 @@ test('a stale report never blocks, so a closed page cannot lock the session', ()
   fresh.configure({ enabled: true, threshold: 5, action: 'stop' })
   assert.equal(fresh.blocking('bash'), false, 'a guard with no report must fail open')
 })
+
+test('turning the guard off resumes work immediately', () => {
+  const state = createGuardState()
+  state.configure({ enabled: true, threshold: 5, action: 'stop' })
+  state.report(2, 1000)
+  assert.equal(state.blocking('bash', 1000), true)
+
+  state.configure({ enabled: false })
+  assert.equal(state.blocking('bash', 1000), false, 'disabling must unblock without a top-up')
+
+  state.configure({ enabled: true, threshold: 1 })
+  assert.equal(state.blocking('bash', 1000), false, 'a threshold below the balance must not block either')
+})

@@ -93,11 +93,11 @@ The panel's **Balance guard** section has three settings:
 
 A **Top up** button sits next to the balance and opens the official recharge page.
 
-**Warn only**: the badge turns amber, a banner appears at the top of the panel, and one system notification fires at the moment the balance crosses the line.
+**Warn only**: the badge turns amber, a banner appears at the top of the panel, a voice clip says the balance is low, and one system notification fires at the moment the balance crosses the line (between 22:00 and 06:00 the voice becomes a short tone).
 
 **Pause work**: besides the warning, every tool call is refused while the balance is below the threshold (`ask_user_question` stays available), so the agent cannot make progress and the session stops. The tool result names the balance, the threshold and how to resume, so the model stops and asks instead of retrying.
 
-After topping up, open the panel and hit **Recheck**; once the balance is back above the threshold, work resumes on the next call.
+After topping up the balance refreshes on its own — when the top-up page closes, when the window regains focus, or on the once-a-minute poll — and work resumes automatically once it is back above the threshold.
 
 > This is a last-resort brake, not a budget. It only intervenes when the account is running out; per-task caps belong in plugins such as `dsh-task-budget`.
 >
