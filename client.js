@@ -25,12 +25,13 @@ window.__ModuleLoader__.load({
     const BALANCE_REFRESH_MS = 60_000
     const ADVANCE_MS = 2 * 60 * 1000
     const SWITCH_DEDUPE_MS = 90_000
+    const GLOBAL_CLAIMS = '__dshSpendTrendClaims'
     const STALE_SWITCH_MS = 10 * 60 * 1000
     const ALARM_KEY = 'dsh-spend-trend:alarm'
     const GUARD_KEY = 'dsh-spend-trend:guard'
     const GUARD_ROUTE = '/plugin/dsh-spend-trend/guard'
     const TOPUP_URL = 'https://platform.deepseek.com/top_up'
-    const DEFAULT_GUARD = { enabled: false, threshold: 5, action: 'warn' }
+    const DEFAULT_GUARD = { enabled: false, threshold: 5, action: 'warn', voice: true }
     const QUIET_START_HOUR = 22
     const QUIET_END_HOUR = 6
 
@@ -75,6 +76,7 @@ window.__ModuleLoader__.load({
         guardWarn: '只提醒',
         guardStop: '暂停执行',
         guardNote: '余额到达预设值暂停所有工作',
+        guardVoice: '语音播报',
         guardBarWarn: (total, threshold) => `余额 ${total} 已低于 ${threshold}，请注意充值`,
         guardBarStop: (total, threshold) => `余额 ${total} 已低于 ${threshold}，已暂停执行`,
         topup: '充值',
@@ -143,6 +145,7 @@ window.__ModuleLoader__.load({
         guardWarn: 'Warn only',
         guardStop: 'Pause work',
         guardNote: 'Pauses all work when the balance reaches the threshold.',
+        guardVoice: 'Voice alert',
         guardBarWarn: (total, threshold) => `Balance ${total} is below ${threshold} — consider topping up`,
         guardBarStop: (total, threshold) => `Balance ${total} is below ${threshold} — work is paused`,
         topup: 'Top up',
@@ -231,6 +234,41 @@ window.__ModuleLoader__.load({
       if (!enabled || previous === null || previous === undefined) return false
       if (previous.kind === phase.kind) return false
       return now - previous.until <= STALE_SWITCH_MS
+    }
+
+    /**
+     * Claim one reminder per page, not per component. A hot reload can leave a
+     * second badge mounted; without this both would notify for the same boundary.
+     * @param key - boundary identity, e.g. `advance:1794547200000`.
+     */
+    function claimOnce(key) {
+      const store = globalThis[GLOBAL_CLAIMS] ?? (globalThis[GLOBAL_CLAIMS] = new Set())
+      if (store.has(key)) return false
+      store.add(key)
+      if (store.size > 50) store.delete(store.values().next().value)
+      return true
+    }
+
+    /**
+     * Keep only digits and a single decimal point, at most two decimals and
+     * nine characters overall, so a stray paste cannot produce garbage.
+     * @param raw - whatever the user typed or pasted.
+     */
+    function sanitizeMoney(raw) {
+      let out = ''
+      let dot = false
+      for (const char of String(raw ?? '')) {
+        if (char >= '0' && char <= '9') out += char
+        else if (char === '.' && !dot) {
+          out += char
+          dot = true
+        }
+        if (out.length >= 9) break
+      }
+      if (out.startsWith('.')) out = `0${out}`
+      const [whole, fraction] = out.split('.')
+      if (fraction !== undefined && fraction.length > 2) return `${whole}.${fraction.slice(0, 2)}`
+      return out
     }
 
     function pickLocale(ctx) {
@@ -322,6 +360,7 @@ window.__ModuleLoader__.load({
           enabled: parsed?.enabled === true,
           threshold: Number.isFinite(threshold) ? Math.max(0, threshold) : DEFAULT_GUARD.threshold,
           action: parsed?.action === 'stop' ? 'stop' : 'warn',
+          voice: parsed?.voice !== false,
         }
       } catch {
         return { ...DEFAULT_GUARD }
@@ -346,6 +385,7 @@ window.__ModuleLoader__.load({
             enabled: value.enabled,
             threshold: value.threshold,
             action: value.action,
+            voice: value.voice !== false,
             total: Number.isFinite(total) ? total : undefined,
           }),
         })
@@ -616,7 +656,53 @@ window.__ModuleLoader__.load({
         lineHeight: '20px',
       },
       meta: { color: 'var(--dsw-alias-label-tertiary)', marginBottom: 6 },
-      chart: { display: 'flex', alignItems: 'flex-end', gap: 4, height: 108, marginTop: 4 },
+      hero: { display: 'flex', flexDirection: 'column', margin: '10px 0 0' },
+      heroLabel: { fontSize: 11, color: 'var(--dsw-alias-label-tertiary)' },
+      heroValue: {
+        fontSize: 24,
+        fontWeight: 600,
+        lineHeight: '30px',
+        letterSpacing: '-0.02em',
+        fontVariantNumeric: 'tabular-nums',
+      },
+      subStats: {
+        display: 'flex',
+        gap: 10,
+        margin: '2px 0 4px',
+        fontSize: 11,
+        color: 'var(--dsw-alias-label-tertiary)',
+      },
+      disclosure: {
+        display: 'flex',
+        alignItems: 'center',
+        gap: 4,
+        margin: '2px 0 0',
+        padding: 0,
+        border: 'none',
+        background: 'transparent',
+        font: 'inherit',
+        fontSize: 11,
+        color: 'var(--dsw-alias-label-tertiary)',
+        cursor: 'pointer',
+      },
+      ratesBox: {
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 3,
+        margin: '4px 0 0',
+        fontSize: 11,
+        lineHeight: '16px',
+        color: 'var(--dsw-alias-label-tertiary)',
+      },
+      balanceValue: { fontSize: 13, fontWeight: 500, fontVariantNumeric: 'tabular-nums' },
+      chart: {
+        display: 'flex',
+        alignItems: 'flex-end',
+        gap: 4,
+        height: 112,
+        marginTop: 6,
+        borderBottom: '0.5px solid var(--dsw-alias-border-l2)',
+      },
       column: {
         flex: 1,
         minWidth: 0,
@@ -628,7 +714,15 @@ window.__ModuleLoader__.load({
         height: '100%',
       },
       value: { fontSize: 9, lineHeight: '12px', color: 'var(--dsw-alias-label-tertiary)', whiteSpace: 'nowrap' },
-      track: { width: '100%', display: 'flex', alignItems: 'flex-end', justifyContent: 'center', height: 82 },
+      track: {
+        width: '100%',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'flex-end',
+        gap: 2,
+        height: 92,
+      },
       bar: { width: 18, maxWidth: '100%', borderRadius: '4px 4px 2px 2px' },
       dayLabel: { fontSize: 10, lineHeight: '14px', color: 'var(--dsw-alias-label-tertiary)' },
       todayLabel: { color: 'var(--dsw-alias-label-primary)' },
@@ -644,7 +738,7 @@ window.__ModuleLoader__.load({
         borderTop: '0.5px solid var(--dsw-alias-border-l2)',
         display: 'flex',
         flexDirection: 'column',
-        gap: 6,
+        gap: 8,
       },
       settingRow: { display: 'flex', alignItems: 'center', gap: 8, justifyContent: 'space-between' },
       settingLabel: { color: 'var(--dsw-alias-label-secondary)' },
@@ -684,6 +778,8 @@ window.__ModuleLoader__.load({
     }
 
     const CSS = `
+      .dsh-spend-trend-panel input[type="checkbox"] { accent-color: var(--dsw-alias-state-business-primary); }
+      .dsh-spend-trend-panel input, .dsh-spend-trend-panel select { outline-offset: 1px; }
       .dsh-spend-trend-badge:hover { background: var(--dsw-alias-interactive-bg-hover); }
       .dsh-spend-trend-badge:focus-visible { outline: 2px solid var(--dsw-focus-ring-color, var(--dsw-alias-state-business-primary)); outline-offset: -2px; }
       .dsh-spend-trend-close:hover { background: var(--dsw-alias-interactive-bg-hover); color: var(--dsw-alias-label-primary); }
@@ -816,21 +912,24 @@ window.__ModuleLoader__.load({
         return h('div', { style: styles.chart, role: 'img', 'aria-label': text.week }, days.map((day, index) => {
           const cost = Number(day.cost) || 0
           const isToday = day.date === daily.today || index === days.length - 1
-          const height = cost > 0 ? Math.max(3, Math.round((cost / max) * 78)) : 2
+          const height = cost > 0 ? Math.max(3, Math.round((cost / max) * 82)) : 2
           const weekday = WEEKDAYS[locale][new Date(`${day.date}T00:00:00`).getDay()]
           return h('div', {
             key: day.date,
             style: styles.column,
             title: `${day.date} · ¥${formatCost(cost)} · ${formatTokens(day.tokens, locale)} tokens`,
           }, [
-            h('span', { key: 'v', style: styles.value }, cost > 0 ? formatCost(cost) : ''),
-            h('div', { key: 't', style: styles.track }, h('div', {
-              style: {
-                ...styles.bar,
-                height,
-                background: isToday ? 'var(--dsw-alias-state-business-primary)' : 'var(--dsw-alias-state-business-tertiary)',
-              },
-            })),
+            h('div', { key: 't', style: styles.track }, [
+              h('span', { key: 'v', style: styles.value }, cost > 0 ? formatCost(cost) : ''),
+              h('div', {
+                key: 'b',
+                style: {
+                  ...styles.bar,
+                  height,
+                  background: isToday ? 'var(--dsw-alias-state-business-primary)' : 'var(--dsw-alias-state-business-tertiary)',
+                },
+              }),
+            ]),
             h('span', {
               key: 'd',
               style: isToday ? { ...styles.dayLabel, ...styles.todayLabel } : styles.dayLabel,
@@ -938,6 +1037,22 @@ window.__ModuleLoader__.load({
       }
 
       function GuardSettings({ guard, onChange }) {
+        // Keep the raw text while typing: a number input would turn an empty
+        // field into 0 and the next keystroke into "028".
+        const [draft, setDraft] = React.useState(String(guard.threshold))
+        React.useEffect(() => {
+          if (Number(draft) !== guard.threshold) setDraft(String(guard.threshold))
+        }, [guard.threshold])
+
+        const commitThreshold = (raw) => {
+          const cleaned = sanitizeMoney(raw)
+          setDraft(cleaned)
+          if (cleaned === '' || cleaned === '.') return
+          const next = Number(cleaned)
+          if (!Number.isFinite(next)) return
+          onChange({ ...guard, threshold: Math.min(Math.max(0, next), 1_000_000) })
+        }
+
         return h('div', { key: 'guard', style: styles.settings }, [
           h('div', { key: 't', style: styles.settingRow }, [
             h('span', { key: 'l', style: { ...styles.settingLabel, color: 'var(--dsw-alias-label-primary)' } },
@@ -958,16 +1073,13 @@ window.__ModuleLoader__.load({
               h('span', { key: 'l', style: styles.settingLabel }, text.guardThreshold),
               h('input', {
                 key: 'i',
-                type: 'number',
-                min: 0,
-                step: 1,
-                value: guard.threshold,
+                type: 'text',
+                inputMode: 'decimal',
+                value: draft,
                 style: { ...styles.control, width: 72 },
                 'aria-label': text.guardThreshold,
-                onChange: (event) => {
-                  const next = Number(event.target.value)
-                  onChange({ ...guard, threshold: Number.isFinite(next) ? Math.max(0, next) : 0 })
-                },
+                onChange: (event) => commitThreshold(event.target.value),
+                onBlur: () => setDraft(String(guard.threshold)),
               }),
             ])
             : null,
@@ -984,6 +1096,18 @@ window.__ModuleLoader__.load({
                 h('option', { key: 'w', value: 'warn' }, text.guardWarn),
                 h('option', { key: 's', value: 'stop' }, text.guardStop),
               ]),
+            ])
+            : null,
+          guard.enabled
+            ? h('div', { key: 'voice', style: styles.settingRow }, [
+              h('span', { key: 'l', style: styles.settingLabel }, text.guardVoice),
+              h('input', {
+                key: 'i',
+                type: 'checkbox',
+                checked: guard.voice !== false,
+                'aria-label': text.guardVoice,
+                onChange: (event) => onChange({ ...guard, voice: event.target.checked }),
+              }),
             ])
             : null,
           guard.enabled && guard.action === 'stop'
@@ -1004,6 +1128,7 @@ window.__ModuleLoader__.load({
         setGuard,
         guardWarn,
         onTopUpFailed,
+        onRefreshBalance,
         onImport,
         onDelete,
         position,
@@ -1023,21 +1148,24 @@ window.__ModuleLoader__.load({
         const notificationState = globalThis.Notification?.permission ?? 'unavailable'
         const denied = notificationState === 'denied'
 
+        const [showRates, setShowRates] = React.useState(false)
+
         return h('div', {
           ref: panelRef,
           style: { ...styles.panel, left: position.left, bottom: position.bottom },
           role: 'dialog',
+          className: 'dsh-spend-trend-panel',
           'aria-label': text.title,
         }, [
           h('div', { key: 'head', style: styles.panelHead }, [
             h('span', { key: 't', style: styles.panelTitle }, text.title),
             h('span', { key: 'p', style: { ...styles.phaseChip, color: PHASE_COLOR[kind] } }, [
               h('span', { key: 'd', style: { ...styles.dot, background: PHASE_COLOR[kind] } }),
-              `${text[kind]}`,
+              text[kind],
             ]),
             typeof phase.until === 'number'
               ? h('span', { key: 'c', style: { color: 'var(--dsw-alias-label-tertiary)', fontSize: 11 } },
-                `${kind === 'peak' ? text.nextOff : text.nextPeak} ${remaining(phase.until, Date.now())}`)
+                `${kind === 'peak' ? text.toOff : text.toPeak} ${remaining(phase.until, Date.now())}`)
               : null,
             h('button', {
               key: 'x',
@@ -1055,28 +1183,27 @@ window.__ModuleLoader__.load({
                 ? text.guardBarStop(money.text, `¥${guard.threshold}`)
                 : text.guardBarWarn(money.text, `¥${guard.threshold}`))
             : null,
-          h('div', { key: 'rate', style: styles.meta },
-            prices === null
-              ? text.loading
-              : `${text.price}（${phase.model}，${text.perMillion}）：${rateLine(prices)}`),
+          h('div', { key: 'hero', style: styles.hero }, [
+            h('span', { key: 'l', style: styles.heroLabel }, text.today),
+            h('span', { key: 'v', style: styles.heroValue }, `¥${formatMoney(todayCost)}`),
+          ]),
+          h('div', { key: 'sub', style: styles.subStats }, [
+            h('span', { key: 'w' }, `${text.total} ¥${formatMoney(weekTotal)}`),
+            h('span', { key: 'a' }, `${text.average} ¥${formatMoney(baseline)}`),
+          ]),
           days.length === 0
             ? h('div', { key: 'empty', style: styles.empty }, text.empty)
-            : h('div', { key: 'body' }, [
-              h('div', { key: 'sum', style: styles.meta },
-                `${text.total} ¥${formatMoney(weekTotal)} · ${text.average} ¥${formatMoney(baseline)}`),
-              h(Bars, { key: 'chart', daily }),
-            ]),
+            : h(Bars, { key: 'chart', daily }),
           h('div', { key: 'div', style: styles.divider }),
-          h('div', { key: 'today', style: styles.footRow }, [
-            h('span', { key: 'l', style: styles.footLabel }, text.today),
-            h('span', { key: 'v', style: styles.footValue }, `¥${formatMoney(todayCost)}`),
-          ]),
-          h('div', { key: 'foot', style: { ...styles.footRow, marginTop: 2 } }, [
+          h('div', { key: 'foot', style: styles.footRow }, [
             h('span', { key: 'l', style: styles.footLabel }, text.balance),
-            h('span', { key: 'v', style: { ...styles.footValue, display: 'inline-flex', alignItems: 'center', gap: 6 } }, [
-              money === null
+            h('span', { key: 'v', style: { display: 'inline-flex', alignItems: 'center', gap: 6 } }, [
+              h('span', {
+                key: 'b',
+                style: money !== null && guardWarn ? { ...styles.balanceValue, color: 'var(--dsw-alias-state-error-primary, #D93025)' } : styles.balanceValue,
+              }, money === null
                 ? (balance?.status === 'unavailable' ? text.balanceNone : text.loading)
-                : money.text,
+                : money.text),
               h('a', {
                 key: 'topup',
                 href: TOPUP_URL,
@@ -1087,7 +1214,7 @@ window.__ModuleLoader__.load({
                 onClick: (event) => {
                   event.preventDefault()
                   const report = (reason) => onTopUpFailed?.(text.topupFailed(reason))
-                  const result = openPlatformTopUp({ back: text.topupBack, onClosed: recheck }, report)
+                  const result = openPlatformTopUp({ back: text.topupBack, onClosed: onRefreshBalance }, report)
                   if (!result.ok) {
                     // No desktop bridge (the web build): fall back to the site.
                     globalThis.open?.(TOPUP_URL, '_blank', 'noopener,noreferrer')
@@ -1097,14 +1224,25 @@ window.__ModuleLoader__.load({
               }, text.topup),
             ]),
           ]),
-          money === null ? null : h('div', {
-            key: 'detail',
-            style: { ...styles.footRow, marginTop: 2, color: 'var(--dsw-alias-label-tertiary)' },
+          h('button', {
+            key: 'rates',
+            type: 'button',
+            style: styles.disclosure,
+            'aria-expanded': showRates,
+            onClick: () => setShowRates(!showRates),
           }, [
-            h('span', { key: 'l', style: styles.footLabel }, text.toppingUp),
-            h('span', { key: 'v', style: styles.footValue }, `${money.toppedUp} · ${text.bonus} ${money.bonus}`),
+            h('span', { key: 'l' }, text.price),
+            h('span', { key: 'i', style: { fontSize: 9, opacity: 0.7 } }, showRates ? '\u2303' : '\u2304'),
           ]),
-          h('div', { key: 'hint', style: styles.hint }, text.schedule),
+          showRates
+            ? h('div', { key: 'ratesbox', style: styles.ratesBox }, [
+              h('span', { key: 'r' }, prices === null ? text.loading : `${phase.model} · ${rateLine(prices)}`),
+              money === null
+                ? null
+                : h('span', { key: 'd' }, `${text.toppingUp} ${money.toppedUp} · ${text.bonus} ${money.bonus}`),
+              h('span', { key: 's' }, text.schedule),
+            ])
+            : null,
           h(AlarmSettings, {
             key: 'alarm',
             alarm,
@@ -1281,6 +1419,9 @@ window.__ModuleLoader__.load({
           // Ignore a switch noticed long after the fact, e.g. a laptop that woke
           // up hours later.
           if (!detectsSwitch(previous, phase, Date.now(), alarm.enabled)) return
+          // Key on the boundary that was crossed, so a second badge mounting
+          // later in the same page cannot announce the same switch again.
+          if (!claimOnce(`switch:${previous.until}`)) return
           fireSwitch(phase.kind, Date.now())
         }, [daily, alarm, text])
 
@@ -1296,6 +1437,7 @@ window.__ModuleLoader__.load({
           const nextPhase = phase.kind === 'peak' ? 'off' : 'peak'
           if (alarm.advance && !fired.current.advance && now >= phase.until - ADVANCE_MS && now < phase.until) {
             fired.current.advance = true
+            if (!claimOnce(`advance:${phase.until}`)) return
             audio.play('chime')
             notify(
               text.notifyAdvanceTitle,
@@ -1304,6 +1446,7 @@ window.__ModuleLoader__.load({
           }
           if (!fired.current.switched && now >= phase.until) {
             fired.current.switched = true
+            if (!claimOnce(`switch:${phase.until}`)) return
             fireSwitch(nextPhase, now)
           }
         }, [now, daily, alarm, text])
@@ -1391,11 +1534,13 @@ window.__ModuleLoader__.load({
               : text.guardNotifyBody(money.text, `¥${guard.threshold}`),
           )
           // The warning voice is part of the feature, not a selectable preset.
-          audio.unlock()
-          if (isQuietHours(now)) {
-            audio.play('ping')
-          } else {
-            audio.voice(`${SOUND_BASE}${BALANCE_WARNING_SOUND}`, BALANCE_WARNING_SOUND)
+          if (guard.voice !== false) {
+            audio.unlock()
+            if (isQuietHours(now)) {
+              audio.play('ping')
+            } else {
+              audio.voice(`${SOUND_BASE}${BALANCE_WARNING_SOUND}`, BALANCE_WARNING_SOUND)
+            }
           }
           setFlash(true)
           setTimeout(() => setFlash(false), 4000)
@@ -1471,6 +1616,7 @@ window.__ModuleLoader__.load({
               setGuard,
               guardWarn,
               onTopUpFailed: (reason) => setNotice(reason),
+              onRefreshBalance: recheck,
               onImport: importClip,
               onDelete: deleteClip,
               position,
@@ -1491,7 +1637,7 @@ window.__ModuleLoader__.load({
     return {
       inject: ['slots'],
       apply,
-      __test: { isQuietHours, chooseSound, detectsSwitch, SOUNDS, DEFAULT_ALARM },
+      __test: { isQuietHours, chooseSound, detectsSwitch, claimOnce, sanitizeMoney, SOUNDS, DEFAULT_ALARM },
     }
   },
 })

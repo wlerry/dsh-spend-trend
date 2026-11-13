@@ -90,6 +90,7 @@ The panel's **Balance guard** section has three settings:
 | Enable | Off by default |
 | Threshold | Default **¥5**; triggers below this |
 | When triggered | **Warn only** (default) or **Pause work** |
+| Voice alert | On by default; turn it off to keep only the flash and notification |
 
 A **Top up** button sits next to the balance and opens the official recharge page.
 

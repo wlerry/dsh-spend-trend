@@ -96,3 +96,23 @@ test('a switch noticed long after the boundary is not announced', () => {
   const late = boundary + 11 * 60 * 1000
   assert.equal(rules.detectsSwitch({ kind: 'peak', until: boundary }, { kind: 'off', until: late + 7200000 }, late, true), false)
 })
+
+test('one reminder is claimed once per page even with several badges', () => {
+  delete globalThis.__dshSpendTrendClaims
+  assert.equal(rules.claimOnce('advance:1'), true)
+  assert.equal(rules.claimOnce('advance:1'), false, 'a second badge must not remind again')
+  assert.equal(rules.claimOnce('advance:2'), true)
+  delete globalThis.__dshSpendTrendClaims
+})
+
+test('the threshold field accepts only money-shaped input', () => {
+  assert.equal(rules.sanitizeMoney('28'), '28')
+  assert.equal(rules.sanitizeMoney('abc28'), '28')
+  assert.equal(rules.sanitizeMoney('2a.5b'), '2.5')
+  assert.equal(rules.sanitizeMoney('1.2.3'), '1.23')
+  assert.equal(rules.sanitizeMoney('1.239'), '1.23')
+  assert.equal(rules.sanitizeMoney(''), '')
+  assert.equal(rules.sanitizeMoney('.5'), '0.5')
+  assert.equal(rules.sanitizeMoney('12<script>'), '12')
+  assert.equal(rules.sanitizeMoney('1234567890123'), '123456789')
+})
