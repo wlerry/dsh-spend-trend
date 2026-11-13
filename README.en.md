@@ -17,6 +17,8 @@
 - 💰 **Shifting work off-peak is the point**: the same generation costs half as much off-peak — output ¥8 → ¥4 per million tokens, cache hit ¥0.04 → ¥0.02. The badge turns “is it expensive right now, and how long until it isn't” into one line you can always see.
 - ⏰ **The alarm exists to catch the cheap window**: when off-peak starts, a voice tells you to get going — that is the slot for long runs, batch generation and refactors, while peak is for lighter work (requirements, prompts, copy edits, review). Whether the voice is pleasant does not matter; **not doing heavy work at peak prices does**.
 - 📊 **The bill at a glance**: account balance, today's spend, a 7-day bar chart and the current model's two-tier rates, one click away.
+- 🛡 **Balance guard**: set a limit (¥5 by default); below it the plugin speaks, notifies, and can optionally pause work so a forgotten session cannot drain the account. Raising the limit above the current balance warns immediately.
+- 💳 **One-click top-up**: the button next to the balance opens the official recharge page (inside the app on Desktop); the balance refreshes by itself afterwards.
 - 🪶 **Small and local**: plain JavaScript, no runtime dependencies, no outbound network — it only reads token usage from your local session logs.
 - 🪟 **One row, no clutter**: fits a 13-inch screen; collapse the sidebar and only a dot and an amount remain, taking no working space.
 
