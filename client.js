@@ -691,6 +691,22 @@ window.__ModuleLoader__.load({
         color: 'var(--dsw-alias-label-tertiary)',
       },
       balanceValue: { fontSize: 13, fontWeight: 500, fontVariantNumeric: 'tabular-nums' },
+      topupButton: {
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: 4,
+        font: 'inherit',
+        fontSize: 11,
+        fontWeight: 500,
+        color: '#ffffff',
+        textDecoration: 'none',
+        padding: '3px 11px',
+        borderRadius: 999,
+        background: 'linear-gradient(135deg, #7f9bff 0%, #b06bff 100%)',
+        boxShadow: '0 3px 12px rgba(140, 110, 255, 0.35)',
+        cursor: 'pointer',
+        whiteSpace: 'nowrap',
+      },
       chart: {
         display: 'flex',
         alignItems: 'flex-end',
@@ -783,6 +799,10 @@ window.__ModuleLoader__.load({
         color: var(--dsw-alias-label-primary);
       }
       .dsh-spend-trend-panel input[type="checkbox"] { accent-color: var(--dsw-alias-state-business-primary); }
+      .dsh-spend-trend-topup:hover {
+        filter: brightness(1.08);
+        box-shadow: 0 4px 16px rgba(140, 110, 255, 0.5);
+      }
       .dsh-spend-trend-panel select,
       .dsh-spend-trend-panel input { color-scheme: dark; }
       .dsh-spend-trend-panel input, .dsh-spend-trend-panel select { outline-offset: 1px; }
@@ -1166,6 +1186,10 @@ window.__ModuleLoader__.load({
         const prices = kind === 'peak' ? phase.peak ?? null : phase.offPeak ?? null
         const notificationState = globalThis.Notification?.permission ?? 'unavailable'
         const denied = notificationState === 'denied'
+        // The top-up button only turns into a filled pill when money is running
+        // low; otherwise it stays a quiet outline button.
+        const urgentTopUp = guardWarn ||
+          (money !== null && Number.isFinite(money.total) && money.total < 5)
 
         const [showRates, setShowRates] = React.useState(false)
 
@@ -1222,7 +1246,8 @@ window.__ModuleLoader__.load({
                 href: TOPUP_URL,
                 target: '_blank',
                 rel: 'noopener noreferrer',
-                style: { ...styles.smallButton, textDecoration: 'none' },
+                className: urgentTopUp ? 'dsh-spend-trend-topup' : undefined,
+                style: urgentTopUp ? styles.topupButton : { ...styles.smallButton, textDecoration: 'none' },
                 title: text.topup,
                 onClick: (event) => {
                   event.preventDefault()
