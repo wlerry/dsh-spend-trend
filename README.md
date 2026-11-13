@@ -46,9 +46,9 @@
 
 ## 视频
 
-![消耗峰谷图 30 秒演示](https://raw.githubusercontent.com/wlerry/dsh-spend-trend/main/assets/screenshots/03-video-poster.png)
+[![消耗峰谷图 30 秒演示](https://raw.githubusercontent.com/wlerry/dsh-spend-trend/main/assets/screenshots/03-video-poster.png)](https://www.bilibili.com/video/BV1vYWa6VE6X)
 
-30 秒讲清楚它解决什么问题：谷时到了它会喊你，峰时先看一眼余额。（B 站链接补充中）
+30 秒讲清楚它解决什么问题：谷时到了它会喊你，峰时先看一眼余额。[在 B 站观看](https://www.bilibili.com/video/BV1vYWa6VE6X)
 
 ## 怎么用：错峰工作法
 

@@ -46,9 +46,9 @@ To remove it, use the **Plugins** page.
 
 ## Video
 
-![30-second demo](https://raw.githubusercontent.com/wlerry/dsh-spend-trend/main/assets/screenshots/03-video-poster.png)
+[![30-second demo](https://raw.githubusercontent.com/wlerry/dsh-spend-trend/main/assets/screenshots/03-video-poster.png)](https://www.bilibili.com/video/BV1vYWa6VE6X)
 
-A 30-second walkthrough: it calls you when off-peak starts, and shows what is left before peak. (Bilibili link coming soon.)
+A 30-second walkthrough: it calls you when off-peak starts, and shows what is left before peak. [Watch on Bilibili](https://www.bilibili.com/video/BV1vYWa6VE6X)
 
 ## How to use it: the off-peak rhythm
 

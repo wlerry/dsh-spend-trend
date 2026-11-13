@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.3.3 — 2026-11-13
+
+- Added the Bilibili demo link to both READMEs.
+
 ## 1.3.2 — 2026-11-13
 
 - Removed the hint under the sound picker that printed the host's absolute clips directory, so the panel no longer leaks a local path.
