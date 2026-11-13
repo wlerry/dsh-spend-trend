@@ -1,5 +1,7 @@
 <p align="center">
-  <img src="assets/icon-180.png" width="132" height="132" alt="Spend peak/off-peak chart">
+  <a href="https://www.bilibili.com/video/BV1vYWa6VE6X">
+    <img src="https://raw.githubusercontent.com/wlerry/dsh-spend-trend/main/assets/screenshots/03-video-poster.png" width="100%" alt="30-second demo">
+  </a>
 </p>
 
 <h1 align="center">Spend peak/off-peak chart · dsh-spend-trend</h1>
@@ -45,12 +47,6 @@ To remove it, use the **Plugins** page.
 ![Sidebar badge](https://raw.githubusercontent.com/wlerry/dsh-spend-trend/main/assets/screenshots/01-badge.png)
 
 ![Expanded panel](https://raw.githubusercontent.com/wlerry/dsh-spend-trend/main/assets/screenshots/02-panel.png)
-
-## Video
-
-[![30-second demo](https://raw.githubusercontent.com/wlerry/dsh-spend-trend/main/assets/screenshots/03-video-poster.png)](https://www.bilibili.com/video/BV1vYWa6VE6X)
-
-A 30-second walkthrough: it calls you when off-peak starts, and shows what is left before peak. [Watch on Bilibili](https://www.bilibili.com/video/BV1vYWa6VE6X)
 
 ## How to use it: the off-peak rhythm
 

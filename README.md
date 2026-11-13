@@ -1,5 +1,7 @@
 <p align="center">
-  <img src="assets/icon-180.png" width="132" height="132" alt="消耗峰谷图">
+  <a href="https://www.bilibili.com/video/BV1vYWa6VE6X">
+    <img src="https://raw.githubusercontent.com/wlerry/dsh-spend-trend/main/assets/screenshots/03-video-poster.png" width="100%" alt="消耗峰谷图 30 秒演示">
+  </a>
 </p>
 
 <h1 align="center">消耗峰谷图 · dsh-spend-trend</h1>
@@ -45,12 +47,6 @@
 ![侧边栏徽标](https://raw.githubusercontent.com/wlerry/dsh-spend-trend/main/assets/screenshots/01-badge.png)
 
 ![展开面板](https://raw.githubusercontent.com/wlerry/dsh-spend-trend/main/assets/screenshots/02-panel.png)
-
-## 视频
-
-[![消耗峰谷图 30 秒演示](https://raw.githubusercontent.com/wlerry/dsh-spend-trend/main/assets/screenshots/03-video-poster.png)](https://www.bilibili.com/video/BV1vYWa6VE6X)
-
-30 秒讲清楚它解决什么问题：谷时到了它会喊你，峰时先看一眼余额。[在 B 站观看](https://www.bilibili.com/video/BV1vYWa6VE6X)
 
 ## 怎么用：错峰工作法
 
