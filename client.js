@@ -62,7 +62,7 @@ window.__ModuleLoader__.load({
         toppingUp: '充值',
         bonus: '赠送',
         alarmTitle: '峰谷切换提醒',
-        alarmSwitch: '开启提醒',
+        alarmSwitch: '开启',
         alarmSound: '提醒音',
         alarmPreview: '试听',
         alarmAdvance: '提前 2 分钟',
@@ -71,15 +71,13 @@ window.__ModuleLoader__.load({
         alarmPending: '通知未开启，点一下面板授权',
         guardTitle: '余额保护',
         guardSwitch: '开启',
-        guardThreshold: '余额阈值（¥）',
+        guardThreshold: '限额（¥）',
         guardAction: '触发时',
         guardWarn: '只提醒',
         guardStop: '暂停执行',
         guardNote: '余额到达预设值暂停所有工作',
         guardVoice: '语音播报',
         guardVoiceFailed: '语音播放失败，请把这段错误发我',
-        guardBarWarn: (total, threshold) => `余额 ${total} 已低于 ${threshold}，请注意充值`,
-        guardBarStop: (total, threshold) => `余额 ${total} 已低于 ${threshold}，已暂停执行`,
         topup: '充值',
         topupBack: '返回 DeepSeek Harness',
         topupFailed: (reason) => `充值页没在应用内打开：${reason}`,
@@ -141,15 +139,13 @@ window.__ModuleLoader__.load({
         alarmPending: 'Notifications off — click the panel to grant',
         guardTitle: 'Balance guard',
         guardSwitch: 'Enable',
-        guardThreshold: 'Threshold (¥)',
+        guardThreshold: 'Limit (¥)',
         guardAction: 'When triggered',
         guardWarn: 'Warn only',
         guardStop: 'Pause work',
         guardNote: 'Pauses all work when the balance reaches the threshold.',
         guardVoice: 'Voice alert',
         guardVoiceFailed: 'The clip failed to play — please share this error',
-        guardBarWarn: (total, threshold) => `Balance ${total} is below ${threshold} — consider topping up`,
-        guardBarStop: (total, threshold) => `Balance ${total} is below ${threshold} — work is paused`,
         topup: 'Top up',
         topupBack: 'Back to DeepSeek Harness',
         topupFailed: (reason) => `The top-up page did not open in the app: ${reason}`,
@@ -634,8 +630,6 @@ window.__ModuleLoader__.load({
         padding: '12px 14px 10px',
         border: '0.5px solid var(--dsw-alias-border-l2)',
         borderRadius: 'var(--dsw-radius-lg)',
-        background: 'var(--dsw-alias-bg-layer-2)',
-        boxShadow: 'var(--dsw-shadow-lv3)',
         color: 'var(--dsw-alias-label-primary)',
         font: 'inherit',
         fontSize: 12,
@@ -701,9 +695,9 @@ window.__ModuleLoader__.load({
         display: 'flex',
         alignItems: 'flex-end',
         gap: 4,
-        height: 112,
+        height: 96,
         marginTop: 6,
-        borderBottom: '0.5px solid var(--dsw-alias-border-l2)',
+        borderBottom: '0.5px solid rgba(170, 175, 255, 0.22)',
       },
       column: {
         flex: 1,
@@ -723,7 +717,7 @@ window.__ModuleLoader__.load({
         alignItems: 'center',
         justifyContent: 'flex-end',
         gap: 2,
-        height: 92,
+        height: 80,
       },
       bar: { width: 18, maxWidth: '100%', borderRadius: '4px 4px 2px 2px' },
       dayLabel: { fontSize: 10, lineHeight: '14px', color: 'var(--dsw-alias-label-tertiary)' },
@@ -764,23 +758,33 @@ window.__ModuleLoader__.load({
         cursor: 'pointer',
       },
       note: { fontSize: 10, color: 'var(--dsw-alias-label-tertiary)', marginTop: 2 },
-      guardBar: {
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        gap: 8,
-        margin: '6px 0 2px',
-        padding: '4px 6px',
-        fontSize: 11,
-        color: 'var(--dsw-alias-label-primary)',
-        background: 'var(--dsw-alias-state-business-tertiary)',
-        border: '0.5px solid var(--dsw-alias-border-l2)',
-        borderRadius: 'var(--dsw-radius-sm)',
-      },
     }
 
     const CSS = `
+      .dsh-spend-trend-panel {
+        --dsw-alias-label-primary: #eef0ff;
+        --dsw-alias-label-secondary: #b3b7d9;
+        --dsw-alias-label-tertiary: #7a7fa6;
+        --dsw-alias-border-l2: rgba(160, 170, 255, 0.18);
+        --dsw-alias-bg-layer-2: #161a33;
+        --dsw-alias-bg-layer-3: rgba(255, 255, 255, 0.06);
+        --dsw-alias-state-business-primary: #7f9bff;
+        --dsw-alias-state-business-tertiary: rgba(127, 155, 255, 0.22);
+        --dsw-alias-state-error-primary: #ff6f9c;
+        --dsw-alias-interactive-bg-hover: rgba(255, 255, 255, 0.08);
+        background:
+          radial-gradient(80% 55% at 6% -6%, rgba(178, 110, 255, 0.30), transparent 60%),
+          radial-gradient(80% 55% at 104% 106%, rgba(80, 120, 255, 0.26), transparent 62%),
+          linear-gradient(160deg, #1a1e47 0%, #201743 52%, #131026 100%);
+        box-shadow:
+          0 22px 56px rgba(10, 8, 26, 0.6),
+          0 0 0 0.5px rgba(185, 165, 255, 0.35) inset,
+          0 0 36px rgba(138, 92, 246, 0.12);
+        color: var(--dsw-alias-label-primary);
+      }
       .dsh-spend-trend-panel input[type="checkbox"] { accent-color: var(--dsw-alias-state-business-primary); }
+      .dsh-spend-trend-panel select,
+      .dsh-spend-trend-panel input { color-scheme: dark; }
       .dsh-spend-trend-panel input, .dsh-spend-trend-panel select { outline-offset: 1px; }
       .dsh-spend-trend-badge:hover { background: var(--dsw-alias-interactive-bg-hover); }
       .dsh-spend-trend-badge:focus-visible { outline: 2px solid var(--dsw-focus-ring-color, var(--dsw-alias-state-business-primary)); outline-offset: -2px; }
@@ -939,7 +943,9 @@ window.__ModuleLoader__.load({
                 style: {
                   ...styles.bar,
                   height,
-                  background: isToday ? 'var(--dsw-alias-state-business-primary)' : 'var(--dsw-alias-state-business-tertiary)',
+                  background: isToday
+                  ? 'linear-gradient(180deg, #a8b6ff 0%, #9a6bff 100%)'
+                  : 'rgba(150, 160, 220, 0.34)',
                 },
               }),
             ]),
@@ -1190,12 +1196,6 @@ window.__ModuleLoader__.load({
               title: text.close,
             }, '×'),
           ]),
-          guardWarn
-            ? h('div', { key: 'guardbar', style: styles.guardBar, role: 'alert' },
-              guard.action === 'stop'
-                ? text.guardBarStop(money.text, `¥${guard.threshold}`)
-                : text.guardBarWarn(money.text, `¥${guard.threshold}`))
-            : null,
           h('div', { key: 'hero', style: styles.hero }, [
             h('span', { key: 'l', style: styles.heroLabel }, text.today),
             h('span', { key: 'v', style: styles.heroValue }, `¥${formatMoney(todayCost)}`),

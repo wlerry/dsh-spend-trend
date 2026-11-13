@@ -2,11 +2,13 @@
 
 ## 1.4.0 — 2026-11-13
 
-- Added the **balance guard**: a threshold (default ¥5) that turns the badge amber and notifies once when the balance crosses it, and can optionally pause work by refusing tool calls (asking stays allowed) until the balance recovers.
-- The balance guard gains a **Voice alert** switch (on by default); turning it off keeps the flash and notification but drops the clip.
-- Crossing the threshold now plays a recorded voice warning (“余额预警，请关注账户”), replaced by a short tone during the quiet window.
-- The balance row now carries a **Top up** link that opens the official recharge page.
-- The host keeps the last reported balance behind a new `guard` route and evaluates it in a `tools/execute` hook; the guard fails open when no fresh report arrives for ten minutes, and the page re-reports every minute even when the value is unchanged. Ten new tests cover the thresholds, the crossing detection, staleness and the route (41 total).
+- Added the **balance guard**: a threshold (default ¥5) that watches the account and either warns or pauses work by refusing tool calls (`ask_user_question` stays allowed) until the balance recovers. It also fires when the threshold is raised above the current balance, not only on the moment the balance drops.
+- The guard speaks a recorded clip (“余额预警，请关注账户”) with a **Voice alert** switch (on by default); the quiet window replaces the voice with a short tone.
+- After a top-up the balance refreshes on its own — closing the in-app top-up page, the window regaining focus, or the once-a-minute poll — so no manual re-check is needed.
+- The balance row carries a **Top up** button that opens the official recharge page inside the desktop window, falling back to the browser when the desktop bridge is unavailable.
+- Redesigned the panel around one headline number: rates and schedule folded behind a disclosure, the chart gets a baseline and a highlighted today bar, and the card picks up a sapphire-to-violet gradient.
+- Fixed the warning voice silently doing nothing because `createAudio()` never exposed `voice`; the panel no longer unmounts when a reminder throws.
+- Guard state lives behind a `guard` route and a `tools/execute` hook that fails open after ten minutes without a fresh balance report. Sixteen new tests cover thresholds, staleness, the routes and the panel helpers (44 total).
 
 ## 1.3.3 — 2026-11-13
 
