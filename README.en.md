@@ -79,6 +79,28 @@ The popover can notify you when the billing phase flips (off by default):
 
 Rules: entering **off-peak** plays the selected voice, entering **peak** always uses Ping, and between **22:00 and 06:00 Beijing time** the voice is replaced by Ping. Settings live in browser `localStorage` (per device). The page must stay open for the alarm to fire; a sleeping machine stays silent and catches up once on wake.
 
+## Balance guard
+
+It exists for one scenario: a session left running while you walk away, draining the account. When the balance drops below your threshold, the plugin steps in.
+
+The panel's **Balance guard** section has three settings:
+
+| Setting | Meaning |
+|---|---|
+| Enable | Off by default |
+| Threshold | Default **¥5**; triggers below this |
+| When triggered | **Warn only** (default) or **Pause work** |
+
+**Warn only**: the badge turns amber, a banner appears at the top of the panel, and one system notification fires at the moment the balance crosses the line.
+
+**Pause work**: besides the warning, every tool call is refused while the balance is below the threshold (`ask_user_question` stays available), so the agent cannot make progress and the session stops. The tool result names the balance, the threshold and how to resume, so the model stops and asks instead of retrying.
+
+After topping up, open the panel and hit **Recheck**; once the balance is back above the threshold, work resumes on the next call.
+
+> This is a last-resort brake, not a budget. It only intervenes when the account is running out; per-task caps belong in plugins such as `dsh-task-budget`.
+>
+> Safety: the page reports the balance every 60 seconds even when the value is unchanged, and the host treats a report older than **10 minutes** as unknown and stops blocking — closing the page can never lock a session for good.
+
 ## Custom alarm sounds
 
 The two bundled voices may not suit everyone — no command line needed:

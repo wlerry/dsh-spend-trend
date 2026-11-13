@@ -8,17 +8,19 @@
 import { readFileSync } from 'node:fs'
 import { homedir } from 'node:os'
 import { join } from 'node:path'
+import { createGuardState } from './lib/guard.js'
 import { phaseStatus, setHolidays } from './lib/pricing.js'
 import { importSound, listSounds, MAX_SOUND_BYTES, removeSound, resolveSound, soundsDir } from './lib/sounds.js'
 import { createUsageCollector } from './lib/usage.js'
 
-export const inject = ['webServer', 'sessionPersistence']
+export const inject = ['webServer', 'sessionPersistence', 'tools']
 
 const ROUTE = '/plugin/dsh-spend-trend/daily'
 const SOUND_ROUTE = '/plugin/dsh-spend-trend/sound'
 const SOUND_LIST_ROUTE = '/plugin/dsh-spend-trend/sounds'
 const CUSTOM_SOUND_ROUTE = '/plugin/dsh-spend-trend/sound/custom'
 const SOUND_IMPORT_ROUTE = '/plugin/dsh-spend-trend/sounds/import'
+const GUARD_ROUTE = '/plugin/dsh-spend-trend/guard'
 const SOUND_DIR = new URL('./assets/sounds/', import.meta.url)
 const MAX_OFFSET_MINUTES = 14 * 60
 
@@ -81,6 +83,19 @@ function soundResource(file) {
 export function apply(ctx) {
   loadHolidays()
 
+  const guard = createGuardState()
+
+  // The page reads the account balance; it reports the total here so the host
+  // can refuse tool calls once the account runs low.
+  ctx.on?.('tools/execute', async (exec, next) => {
+    if (!guard.blocking(exec?.name)) return next()
+    const { guard: settings, total } = guard.snapshot()
+    throw new Error(
+      `余额不足（¥${Number(total).toFixed(2)} 低于 ¥${settings.threshold}），已暂停执行。` +
+        '充值后打开「消耗峰谷图」面板点「重新检查」即可继续。',
+    )
+  })
+
   const collector = createUsageCollector({
     list: () => ctx.sessionPersistence.list(),
     open: (id) => ctx.sessionPersistence.open(id, 'read'),
@@ -121,6 +136,47 @@ export function apply(ctx) {
     kind: 'exact',
     path: ROUTE,
     resource: respond,
+  }))
+
+  // One route, two verbs: GET returns the state, POST records the balance.
+  ctx.effect(() => ctx.webServer.register({
+    kind: 'exact',
+    path: GUARD_ROUTE,
+    handler: (req, res) => {
+      if (req.method === 'GET' || req.method === 'HEAD') {
+        const body = JSON.stringify({ ok: true, ...guard.snapshot() })
+        res.writeHead(200, { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' })
+        res.end(req.method === 'HEAD' ? undefined : body)
+        return
+      }
+      if (req.method !== 'POST' || req.headers['x-spend-trend'] !== '1') {
+        res.writeHead(403, { 'content-type': 'text/plain' })
+        res.end('forbidden')
+        return
+      }
+      const chunks = []
+      let size = 0
+      req.on('data', (chunk) => {
+        size += chunk.length
+        if (size > 4096) {
+          req.destroy()
+          return
+        }
+        chunks.push(chunk)
+      })
+      req.on('end', () => {
+        try {
+          const parsed = JSON.parse(Buffer.concat(chunks).toString('utf8'))
+          guard.configure(parsed)
+          guard.report(parsed?.total)
+          res.writeHead(200, { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' })
+          res.end(JSON.stringify({ ok: true, ...guard.snapshot() }))
+        } catch (error) {
+          res.writeHead(400, { 'content-type': 'application/json; charset=utf-8' })
+          res.end(JSON.stringify({ ok: false, error: String(error?.message ?? error) }))
+        }
+      })
+    },
   }))
 
   // The user's own clips: list them, and serve any one by file name.

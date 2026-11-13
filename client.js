@@ -26,6 +26,9 @@ window.__ModuleLoader__.load({
     const SWITCH_DEDUPE_MS = 90_000
     const STALE_SWITCH_MS = 10 * 60 * 1000
     const ALARM_KEY = 'dsh-spend-trend:alarm'
+    const GUARD_KEY = 'dsh-spend-trend:guard'
+    const GUARD_ROUTE = '/plugin/dsh-spend-trend/guard'
+    const DEFAULT_GUARD = { enabled: false, threshold: 5, action: 'warn' }
     const QUIET_START_HOUR = 22
     const QUIET_END_HOUR = 6
 
@@ -63,6 +66,19 @@ window.__ModuleLoader__.load({
         alarmQuiet: '22:00–06:00 不播语音',
         alarmDenied: '通知被拒绝，只响铃；可在系统设置里允许',
         alarmPending: '通知未开启，点一下面板授权',
+        guardTitle: '余额兜底',
+        guardSwitch: '开启',
+        guardThreshold: '余额阈值（¥）',
+        guardAction: '触发时',
+        guardWarn: '只提醒',
+        guardStop: '暂停执行',
+        guardNote: '余额低于阈值时停掉工具调用，防止忘记关会话把余额烧完；充值后点「重新检查」恢复。',
+        guardBarWarn: (total, threshold) => `余额 ${total} 已低于 ${threshold}，请注意充值`,
+        guardBarStop: (total, threshold) => `余额 ${total} 已低于 ${threshold}，已暂停执行`,
+        guardRecover: '重新检查',
+        guardNotifyTitle: '余额不足',
+        guardNotifyBody: (total, threshold) => `余额 ${total} 低于 ${threshold}，请注意充值`, 
+        guardNotifyStop: (total, threshold) => `余额 ${total} 低于 ${threshold}，已暂停执行`, 
         alarmPeak: '切到峰期',
         alarmOff: '切到谷期',
         notifyOffTitle: '已切换到谷期',
@@ -116,6 +132,19 @@ window.__ModuleLoader__.load({
         alarmQuiet: 'No voice 22:00–06:00',
         alarmDenied: 'Notifications denied, sound only — allow them in system settings',
         alarmPending: 'Notifications off — click the panel to grant',
+        guardTitle: 'Balance guard',
+        guardSwitch: 'Enable',
+        guardThreshold: 'Threshold (¥)',
+        guardAction: 'When triggered',
+        guardWarn: 'Warn only',
+        guardStop: 'Pause work',
+        guardNote: 'Stops tool calls once the balance drops below the threshold, so a forgotten session cannot drain the account. Click “Recheck” after topping up.',
+        guardBarWarn: (total, threshold) => `Balance ${total} is below ${threshold} — consider topping up`,
+        guardBarStop: (total, threshold) => `Balance ${total} is below ${threshold} — work is paused`,
+        guardRecover: 'Recheck',
+        guardNotifyTitle: 'Low balance',
+        guardNotifyBody: (total, threshold) => `Balance ${total} is below ${threshold} — consider topping up`,
+        guardNotifyStop: (total, threshold) => `Balance ${total} is below ${threshold} — work is paused`,
         alarmPeak: 'Switch to peak',
         alarmOff: 'Switch to off-peak',
         notifyOffTitle: 'Off-peak started',
@@ -277,6 +306,48 @@ window.__ModuleLoader__.load({
       }
     }
 
+    function loadGuard() {
+      try {
+        const raw = globalThis.localStorage?.getItem(GUARD_KEY)
+        if (raw === null || raw === undefined) return { ...DEFAULT_GUARD }
+        const parsed = JSON.parse(raw)
+        const threshold = Number(parsed?.threshold)
+        return {
+          enabled: parsed?.enabled === true,
+          threshold: Number.isFinite(threshold) ? Math.max(0, threshold) : DEFAULT_GUARD.threshold,
+          action: parsed?.action === 'stop' ? 'stop' : 'warn',
+        }
+      } catch {
+        return { ...DEFAULT_GUARD }
+      }
+    }
+
+    function saveGuard(value) {
+      try {
+        globalThis.localStorage?.setItem(GUARD_KEY, JSON.stringify(value))
+      } catch {
+        /* storage can be unavailable; the setting then lasts for this page */
+      }
+    }
+
+    /** Send the current settings and balance to the host guard. */
+    async function reportGuard(value, total) {
+      try {
+        await fetch(GUARD_ROUTE, {
+          method: 'POST',
+          headers: { 'content-type': 'application/json', 'x-spend-trend': '1' },
+          body: JSON.stringify({
+            enabled: value.enabled,
+            threshold: value.threshold,
+            action: value.action,
+            total: Number.isFinite(total) ? total : undefined,
+          }),
+        })
+      } catch {
+        /* the host keeps the previous value */
+      }
+    }
+
     function utcOffsetMinutes() {
       return -new Date().getTimezoneOffset()
     }
@@ -362,6 +433,7 @@ window.__ModuleLoader__.load({
         .reduce((sum, wallet) => sum + Number(wallet.balance ?? 0), 0)
       return {
         primary,
+        total: Number(totals.get(primary)),
         text: `${currencySymbol(primary)}${formatMoney(totals.get(primary))}`,
         toppedUp: `${currencySymbol(primary)}${formatMoney(sumOf(balance.toppedUp))}`,
         bonus: `${currencySymbol(primary)}${formatMoney(sumOf(balance.bonus))}`,
@@ -506,6 +578,19 @@ window.__ModuleLoader__.load({
         cursor: 'pointer',
       },
       note: { fontSize: 10, color: 'var(--dsw-alias-label-tertiary)', marginTop: 2 },
+      guardBar: {
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        gap: 8,
+        margin: '6px 0 2px',
+        padding: '4px 6px',
+        fontSize: 11,
+        color: 'var(--dsw-alias-label-primary)',
+        background: 'var(--dsw-alias-state-business-tertiary)',
+        border: '0.5px solid var(--dsw-alias-border-l2)',
+        borderRadius: 'var(--dsw-radius-sm)',
+      },
     }
 
     const CSS = `
@@ -762,7 +847,77 @@ window.__ModuleLoader__.load({
         ])
       }
 
-      function Panel({ daily, balance, phase, alarm, custom, notice, setAlarm, onImport, onDelete, position, panelRef, onClose }) {
+      function GuardSettings({ guard, onChange }) {
+        return h('div', { key: 'guard', style: styles.settings }, [
+          h('div', { key: 't', style: styles.settingRow }, [
+            h('span', { key: 'l', style: { ...styles.settingLabel, color: 'var(--dsw-alias-label-primary)' } },
+              text.guardTitle),
+            h('label', { key: 's', style: { ...styles.settingRow, gap: 6 } }, [
+              h('span', { key: 't', style: styles.settingLabel }, text.guardSwitch),
+              h('input', {
+                key: 'i',
+                type: 'checkbox',
+                checked: guard.enabled,
+                'aria-label': text.guardSwitch,
+                onChange: (event) => onChange({ ...guard, enabled: event.target.checked }),
+              }),
+            ]),
+          ]),
+          guard.enabled
+            ? h('div', { key: 'th', style: styles.settingRow }, [
+              h('span', { key: 'l', style: styles.settingLabel }, text.guardThreshold),
+              h('input', {
+                key: 'i',
+                type: 'number',
+                min: 0,
+                step: 1,
+                value: guard.threshold,
+                style: { ...styles.control, width: 72 },
+                'aria-label': text.guardThreshold,
+                onChange: (event) => {
+                  const next = Number(event.target.value)
+                  onChange({ ...guard, threshold: Number.isFinite(next) ? Math.max(0, next) : 0 })
+                },
+              }),
+            ])
+            : null,
+          guard.enabled
+            ? h('div', { key: 'ac', style: styles.settingRow }, [
+              h('span', { key: 'l', style: styles.settingLabel }, text.guardAction),
+              h('select', {
+                key: 'i',
+                style: styles.control,
+                value: guard.action,
+                'aria-label': text.guardAction,
+                onChange: (event) => onChange({ ...guard, action: event.target.value === 'stop' ? 'stop' : 'warn' }),
+              }, [
+                h('option', { key: 'w', value: 'warn' }, text.guardWarn),
+                h('option', { key: 's', value: 'stop' }, text.guardStop),
+              ]),
+            ])
+            : null,
+          guard.enabled ? h('div', { key: 'n', style: styles.note }, text.guardNote) : null,
+        ])
+      }
+
+      function Panel({
+        daily,
+        balance,
+        phase,
+        alarm,
+        custom,
+        notice,
+        setAlarm,
+        guard,
+        setGuard,
+        guardWarn,
+        onRecheck,
+        onImport,
+        onDelete,
+        position,
+        panelRef,
+        onClose,
+      }) {
         const days = daily?.days ?? []
         const weekTotal = days.reduce((sum, day) => sum + (Number(day.cost) || 0), 0)
         const previous = days.slice(0, -1)
@@ -802,6 +957,19 @@ window.__ModuleLoader__.load({
               title: text.close,
             }, '×'),
           ]),
+          guardWarn
+            ? h('div', { key: 'guardbar', style: styles.guardBar, role: 'alert' }, [
+              h('span', { key: 't' }, guard.action === 'stop'
+                ? text.guardBarStop(money.text, `¥${guard.threshold}`)
+                : text.guardBarWarn(money.text, `¥${guard.threshold}`)),
+              h('button', {
+                key: 'r',
+                type: 'button',
+                style: styles.smallButton,
+                onClick: onRecheck,
+              }, text.guardRecover),
+            ])
+            : null,
           h('div', { key: 'rate', style: styles.meta },
             prices === null
               ? text.loading
@@ -842,6 +1010,7 @@ window.__ModuleLoader__.load({
             onImport,
             onDelete,
           }),
+          h(GuardSettings, { key: 'guard', guard, onChange: setGuard }),
           notice === '' ? null : h('div', { key: 'notice', style: styles.note }, notice),
         ])
       }
@@ -854,6 +1023,7 @@ window.__ModuleLoader__.load({
         const [position, setPosition] = React.useState(null)
         const [now, setNow] = React.useState(() => Date.now())
         const [alarm, setAlarmState] = React.useState(loadAlarm)
+        const [guard, setGuardState] = React.useState(loadGuard)
         const [custom, setCustom] = React.useState({ dir: '', sounds: [], loaded: false })
         const [notice, setNotice] = React.useState('')
         const [flash, setFlash] = React.useState(false)
@@ -1064,9 +1234,55 @@ window.__ModuleLoader__.load({
 
         const phase = daily?.phase ?? { kind: 'off', until: null, model: 'deepseek-flash', peak: {}, offPeak: {} }
         const money = summarize(balance)
+        const guardWarn = guard.enabled && guard.threshold > 0 &&
+          Number.isFinite(money?.total) && money.total < guard.threshold
+
+        const setGuard = (next) => {
+          setGuardState(next)
+          saveGuard(next)
+          reportGuard(next, Number.isFinite(money?.total) ? money.total : undefined)
+        }
+
+        // Re-report on a timer even when the value did not change: the host
+        // treats an old report as unknown, and a silent page must not leave a
+        // stale number in charge.
+        const guardRef = React.useRef(guard)
+        guardRef.current = guard
+        const totalRef = React.useRef(undefined)
+        totalRef.current = Number.isFinite(money?.total) ? money.total : undefined
+        React.useEffect(() => {
+          const timer = setInterval(() => reportGuard(guardRef.current, totalRef.current), 60_000)
+          return () => clearInterval(timer)
+        }, [])
+
+        // Keep the host guard in sync with the latest balance and announce the
+        // single moment the balance drops below the threshold.
+        const lastGuardTotal = React.useRef(null)
+        React.useEffect(() => {
+          const total = Number.isFinite(money?.total) ? money.total : undefined
+          reportGuard(guard, total)
+          if (total === undefined) return
+          const previous = lastGuardTotal.current
+          lastGuardTotal.current = total
+          if (!guard.enabled || guard.threshold <= 0) return
+          if (previous === null || previous < guard.threshold || total >= guard.threshold) return
+          notify(
+            text.guardNotifyTitle,
+            guard.action === 'stop'
+              ? text.guardNotifyStop(money.text, `¥${guard.threshold}`)
+              : text.guardNotifyBody(money.text, `¥${guard.threshold}`),
+          )
+          setFlash(true)
+          setTimeout(() => setFlash(false), 4000)
+        }, [money?.total, guard, text])
+
         const kind = phase.kind
         const countdown = typeof phase.until === 'number' ? remaining(phase.until, now, true) : '—'
         const title = `${text[kind]} · ${text.balance} ${money === null ? '—' : money.text}`
+
+        const recheck = () => {
+          readBalance(ctx, locale).then((value) => setBalance(value)).catch(() => {})
+        }
 
         const toggle = () => {
           if (open) {
@@ -1098,12 +1314,22 @@ window.__ModuleLoader__.load({
             'aria-haspopup': 'dialog',
             'aria-expanded': open,
           }, h('span', { style: styles.row }, [
-            h('span', { key: 'd', style: { ...styles.dot, background: PHASE_COLOR[kind] } }),
+            h('span', {
+              key: 'd',
+              style: guardWarn ? { ...styles.dot, background: '#E0A800' } : { ...styles.dot, background: PHASE_COLOR[kind] },
+            }),
             h('span', { key: 'p', style: styles.phase }, text[kind]),
             wide
               ? h('span', { key: 'c', style: styles.countdown }, `${kind === 'peak' ? text.toOff : text.toPeak} ${countdown}`)
               : null,
-            h('span', { key: 'b', style: { ...styles.balance, fontSize: wide ? 12 : 10 } }, money === null ? '—' : money.text),
+            h('span', {
+              key: 'b',
+              style: {
+                ...styles.balance,
+                fontSize: wide ? 12 : 10,
+                ...(guardWarn ? { color: 'var(--dsw-alias-state-error-primary, #D93025)' } : {}),
+              },
+            }, money === null ? '—' : money.text),
           ])),
           open && position !== null
             ? h(Panel, {
@@ -1115,6 +1341,10 @@ window.__ModuleLoader__.load({
               custom,
               notice,
               setAlarm,
+              guard,
+              setGuard,
+              guardWarn,
+              onRecheck: recheck,
               onImport: importClip,
               onDelete: deleteClip,
               position,
